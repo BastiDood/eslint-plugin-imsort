@@ -13,6 +13,11 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 
 ## Configuration
 
+> [!CAUTION]
+> This plugin conflicts with the built-in `sort-imports` rule.
+
+[`sort-imports`]: https://eslint.org/docs/latest/rules/sort-imports
+
 ### ESLint Flat Config (recommended!)
 
 Add the plugin to your `eslint.config.js`:
@@ -24,7 +29,7 @@ export default [
   {
     files: ['**/*.{j,t}s{,x}'],
     plugins: { '@bastidood/imsort': imsort },
-    rules: { 'imsort/sort-imports': 'error' },
+    rules: { '@bastidood/imsort/sort-imports': 'error' },
   },
 ];
 ```
@@ -65,7 +70,7 @@ The plugin organizes imports into the following groups, in order:
    import utils from 'shared:utils';
    ```
 
-4. **Third-party packages** (bare imports from node_modules)
+4. **Third-party packages** (bare imports from `node_modules`)
 
    ```js
    import React from 'react';
@@ -139,7 +144,7 @@ Currently, the plugin works with zero configuration and doesn't accept any optio
 
 The plugin automatically detects your code's formatting preferences:
 
-- **Quote style** (single vs double quotes)
+- **Quote style** (single versus double quotes)
 - **Trailing commas** in import statements
 - **Line length** for formatting decisions
 
