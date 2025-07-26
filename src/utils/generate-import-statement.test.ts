@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import type { ImportNode } from '../types.js';
+
 import type { FormattingPreferences } from './types.js';
 import { generateImportStatement } from './generate-import-statement.js';
-
-import type { ImportNode } from '../types.js';
 
 // Helper function to create mock import nodes
 function createMockImport(

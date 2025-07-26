@@ -31,13 +31,12 @@ export function getImportGroupPriority(source: string): number {
     const pathParts = source.split('/');
     const depth = pathParts.length - 2; // Subtract 2 for './' prefix and filename
 
-    if (depth === 0) {
+    if (depth === 0)
       // Same directory import (./filename)
       return 50;
-    } else {
-      // Descendant import (./folder/filename, ./folder/subfolder/filename, etc.)
-      return 50 + depth;
-    }
+
+    // Descendant import (./folder/filename, ./folder/subfolder/filename, etc.)
+    return 50 + depth;
   }
 
   // Non-namespaced bare imports (react, express, @types/*, etc.)

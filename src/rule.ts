@@ -2,11 +2,12 @@ import { enumerate } from 'itertools';
 import type { ImportDeclaration, Program } from 'estree';
 import type { Rule } from 'eslint';
 
+import type { ImportNode } from './types.ts';
+
 import { detectFormattingPreferences } from './utils/detect-formatting-preferences.ts';
 import { extractImportInfo } from './utils/extract-import-info.ts';
 import { generateImportStatement } from './utils/generate-import-statement.ts';
 import { getImportGroupPriority } from './utils/get-import-group-priority.ts';
-import type { ImportNode } from './types.ts';
 import { sortImportsInGroup } from './utils/sort-imports-in-group.ts';
 
 export const sortImports: Rule.RuleModule = {
