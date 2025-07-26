@@ -5,7 +5,7 @@ import { sortImports } from './rule.ts';
 export default {
   meta: {
     name: '@bastidood/eslint-plugin-imsort',
-    version: '0.1.0',
+    version: '0.3.0',
     namespace: '@bastidood/imsort',
   },
   rules: { 'sort-imports': sortImports },

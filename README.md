@@ -23,7 +23,7 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 Add the plugin to your `eslint.config.js`:
 
 ```js
-import imsort from 'eslint-plugin-imsort';
+import imsort from '@bastidood/eslint-plugin-imsort';
 
 export default [
   {
@@ -40,7 +40,7 @@ Add to your `.eslintrc.json`:
 
 ```json
 {
-  "plugins": ["imsort"],
+  "plugins": ["@bastidood/imsort"],
   "rules": { "imsort/sort-imports": "error" }
 }
 ```
