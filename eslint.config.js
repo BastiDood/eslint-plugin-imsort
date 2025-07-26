@@ -8,7 +8,7 @@ import imsort from './src/index.ts';
 export default defineConfig(
   { ignores: ['node_modules/**'] },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{j,t}s{,x}'],
     extends: [
       js.configs.recommended,
       ...ts.configs.recommended,
