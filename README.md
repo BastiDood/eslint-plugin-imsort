@@ -11,12 +11,6 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 - **Zero configuration** - works out of the box with sensible defaults
 - **Auto-fixable** - automatically sorts imports when running `eslint --fix`
 
-## Installation
-
-```bash
-pnpm add -D eslint-plugin-imsort
-```
-
 ## Configuration
 
 ### ESLint Flat Config (recommended!)
