@@ -4,9 +4,9 @@ import { sortImports } from './rule.ts';
 
 export default {
   meta: {
-    name: 'eslint-plugin-imsort',
+    name: '@bastidood/eslint-plugin-imsort',
     version: '0.1.0',
-    namespace: 'imsort',
+    namespace: '@bastidood/imsort',
   },
   rules: { 'sort-imports': sortImports },
 } satisfies ESLint.Plugin;

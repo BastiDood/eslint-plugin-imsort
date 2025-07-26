@@ -1,5 +1,5 @@
 {
-  "name": "eslint-plugin-imsort",
+  "name": "@bastidood/eslint-plugin-imsort",
   "description": "An opinionated ESLint plugin for sorting imports.",
   "version": "0.1.0",
   "type": "module",

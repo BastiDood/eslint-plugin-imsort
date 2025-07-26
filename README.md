@@ -29,7 +29,7 @@ import imsort from 'eslint-plugin-imsort';
 export default [
   {
     files: ['**/*.{j,t}s{,x}'],
-    plugins: { imsort },
+    plugins: { '@bastidood/imsort': imsort },
     rules: { 'imsort/sort-imports': 'error' },
   },
 ];

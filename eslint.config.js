@@ -15,9 +15,9 @@ export default defineConfig(
       ...ts.configs.stylistic,
       prettier,
     ],
-    plugins: { imsort },
+    plugins: { '@bastidood/imsort': imsort },
     rules: {
-      'imsort/sort-imports': 'error',
+      '@bastidood/imsort/sort-imports': 'error',
       '@typescript-eslint/class-methods-use-this': 'error',
       '@typescript-eslint/default-param-last': 'error',
       '@typescript-eslint/init-declarations': 'error',
