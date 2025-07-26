@@ -1,0 +1,12 @@
+# Tests
+src/**/*.test.ts
+
+# Development
+.prettierignore
+.prettierrc.json
+eslint.config.js
+tsconfig.json
+
+# Package Manager
+pnpm-workspace.yaml
+pnpm-lock.yaml
