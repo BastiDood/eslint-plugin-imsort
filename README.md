@@ -14,7 +14,7 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 ## Configuration
 
 > [!CAUTION]
-> This plugin conflicts with the built-in `sort-imports` rule.
+> This plugin conflicts with the built-in [`sort-imports`] rule.
 
 [`sort-imports`]: https://eslint.org/docs/latest/rules/sort-imports
 
