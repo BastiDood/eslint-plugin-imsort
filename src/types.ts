@@ -16,9 +16,3 @@ export interface ImportNode {
 }
 
 export type ImportTypeOrder = Record<ImportType, number>;
-
-export interface FormattingPreferences {
-  useSingleQuotes: boolean;
-  useTrailingComma: boolean;
-  maxLineLength: number;
-}

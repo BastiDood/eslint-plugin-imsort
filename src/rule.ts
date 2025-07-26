@@ -3,13 +3,11 @@ import type { ImportDeclaration, Program } from 'estree';
 import { enumerate } from 'itertools';
 
 import type { ImportNode } from './types.js';
-import {
-  extractImportInfo,
-  getImportGroupPriority,
-  sortImportsInGroup,
-  detectFormattingPreferences,
-  generateImportStatement,
-} from './utils.js';
+import { extractImportInfo } from './utils/extract-import-info.js';
+import { getImportGroupPriority } from './utils/get-import-group-priority.js';
+import { sortImportsInGroup } from './utils/sort-imports-in-group.js';
+import { detectFormattingPreferences } from './utils/detect-formatting-preferences.js';
+import { generateImportStatement } from './utils/generate-import-statement.js';
 
 export const sortImports: Rule.RuleModule = {
   meta: {
