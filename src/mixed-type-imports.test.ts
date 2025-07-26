@@ -361,5 +361,151 @@ describe('Mixed type imports support', () => {
         "import React, { type Component, type FC, useEffect, useState } from 'react';",
       );
     });
+
+    // NEW TEST CASES to expose potential bugs with type preservation
+    it('should preserve type keywords when rearranging unsorted mixed imports', () => {
+      // Test case where imports are out of order and need rearranging
+      const sourceText =
+        "import { value, type User, helper, type Config } from './types';";
+
+      const node = createMockNode(
+        './types',
+        [
+          createImportSpecifier('value'),
+          createImportSpecifier('User'),
+          createImportSpecifier('helper'),
+          createImportSpecifier('Config'),
+        ],
+        sourceText,
+      );
+
+      const extracted = extractImportInfo(node, sourceText);
+      const generated = generateImportStatement(extracted, defaultPreferences);
+
+      // Should preserve type keywords even when reordering
+      expect(generated).toBe(
+        "import { type Config, helper, type User, value } from './types';",
+      );
+    });
+
+    it('should preserve statement-level type import when rearranging', () => {
+      const sourceText = "import type { Config, User, Helper } from './types';";
+
+      const node = createMockNode(
+        './types',
+        [
+          createImportSpecifier('Config'),
+          createImportSpecifier('User'),
+          createImportSpecifier('Helper'),
+        ],
+        sourceText,
+      );
+
+      const extracted = extractImportInfo(node, sourceText);
+      const generated = generateImportStatement(extracted, defaultPreferences);
+
+      // Should preserve statement-level type keyword
+      expect(generated).toBe(
+        "import type { Config, Helper, User } from './types';",
+      );
+    });
+
+    it('should handle mixed imports with aliases when rearranging', () => {
+      const sourceText =
+        "import { value, type User as UserType, helper, type Config as ConfigInterface } from './types';";
+
+      const node = createMockNode(
+        './types',
+        [
+          createImportSpecifier('value'),
+          createImportSpecifier('User', 'UserType'),
+          createImportSpecifier('helper'),
+          createImportSpecifier('Config', 'ConfigInterface'),
+        ],
+        sourceText,
+      );
+
+      const extracted = extractImportInfo(node, sourceText);
+      const generated = generateImportStatement(extracted, defaultPreferences);
+
+      expect(generated).toBe(
+        "import { type Config as ConfigInterface, helper, type User as UserType, value } from './types';",
+      );
+    });
+
+    it('should preserve type imports in namespace imports when rearranging', () => {
+      const sourceText = "import type * as Types from './types';";
+
+      const node = {
+        type: 'ImportDeclaration' as const,
+        attributes: [],
+        source: {
+          type: 'Literal' as const,
+          value: './types',
+          raw: "'./types'",
+        },
+        specifiers: [
+          {
+            type: 'ImportNamespaceSpecifier' as const,
+            local: { type: 'Identifier' as const, name: 'Types' },
+          },
+        ],
+        range: [0, sourceText.length] as [number, number],
+        loc: {
+          start: { line: 1, column: 0 },
+          end: { line: 1, column: sourceText.length },
+        },
+      };
+
+      const extracted = extractImportInfo(node, sourceText);
+      const generated = generateImportStatement(extracted, defaultPreferences);
+
+      expect(generated).toBe("import type * as Types from './types';");
+    });
+
+    it('should preserve mixed default and type imports with complex ordering', () => {
+      const sourceText =
+        "import React, { useEffect, type FC, useState, type ReactNode, useMemo, type Component } from 'react';";
+
+      const node = createMockNode(
+        'react',
+        [
+          createDefaultSpecifier('React'),
+          createImportSpecifier('useEffect'),
+          createImportSpecifier('FC'),
+          createImportSpecifier('useState'),
+          createImportSpecifier('ReactNode'),
+          createImportSpecifier('useMemo'),
+          createImportSpecifier('Component'),
+        ],
+        sourceText,
+      );
+
+      const extracted = extractImportInfo(node, sourceText);
+      const generated = generateImportStatement(extracted, defaultPreferences);
+
+      expect(generated).toBe(
+        "import React, { type Component, type FC, type ReactNode, useEffect, useMemo, useState } from 'react';",
+      );
+    });
+
+    it('should handle edge case with only type imports in named import', () => {
+      const sourceText =
+        "import { type User, type Config, type Helper } from './types';";
+
+      const node = createMockNode('./types', [
+        createImportSpecifier('User'),
+        createImportSpecifier('Config'),
+        createImportSpecifier('Helper'),
+      ]);
+
+      const extracted = extractImportInfo(node, sourceText);
+      const generated = generateImportStatement(extracted, defaultPreferences);
+
+      // All are individual type imports, not statement-level
+      expect(generated).toBe(
+        "import { type Config, type Helper, type User } from './types';",
+      );
+    });
   });
 });

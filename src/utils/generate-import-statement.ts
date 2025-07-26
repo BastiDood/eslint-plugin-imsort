@@ -3,13 +3,15 @@ import type { ImportIdentifier, ImportNode } from '../types.ts';
 import type { FormattingPreferences } from './types.ts';
 
 /** Formats an identifier for import statement generation */
-function formatIdentifier(identifier: ImportIdentifier): string {
-  const typePrefix = identifier.isTypeOnly === true ? 'type ' : '';
-
-  if (typeof identifier.local !== 'undefined')
-    return `${typePrefix}${identifier.imported} as ${identifier.local}`;
-
-  return `${typePrefix}${identifier.imported}`;
+function formatIdentifier(
+  identifier: ImportIdentifier,
+  suppressTypePrefix = false,
+): string {
+  const typePrefix =
+    !suppressTypePrefix && identifier.isTypeOnly === true ? 'type ' : '';
+  return typeof identifier.local === 'undefined'
+    ? `${typePrefix}${identifier.imported}`
+    : `${typePrefix}${identifier.imported} as ${identifier.local}`;
 }
 
 /** Generates the corrected import statement with improved formatting */
@@ -19,10 +21,10 @@ export function generateImportStatement(
 ) {
   const { source, type, identifiers, isTypeOnly } = importInfo;
 
-  // For full type-only imports, use the type prefix at statement level
-  // For mixed imports, individual identifiers will have their own type prefixes
-  const hasIndividualTypes = identifiers.some(id => id.isTypeOnly === true);
-  const statementTypePrefix = isTypeOnly && !hasIndividualTypes ? 'type ' : '';
+  // For statement-level type imports, use the type prefix at statement level
+  // and suppress individual type prefixes
+  const statementTypePrefix = isTypeOnly ? 'type ' : '';
+  const suppressIndividualTypes = isTypeOnly; // If statement is type-only, don't add individual type prefixes
   const quote = preferences.useSingleQuotes ? "'" : '"';
 
   switch (type) {
@@ -34,10 +36,8 @@ export function generateImportStatement(
       if (typeof identifier === 'undefined')
         throw new Error('Namespace identifier is required');
 
-      const formattedIdentifier = hasIndividualTypes
-        ? formatIdentifier(identifier)
-        : identifier.imported;
-      return `import ${statementTypePrefix}* as ${formattedIdentifier} from ${quote}${source}${quote};`;
+      // For namespace imports, type keyword should always be at statement level
+      return `import ${statementTypePrefix}* as ${identifier.imported} from ${quote}${source}${quote};`;
     }
 
     case 'default': {
@@ -46,9 +46,10 @@ export function generateImportStatement(
         if (typeof identifier === 'undefined')
           throw new Error('Default identifier is required');
 
-        const formattedIdentifier = hasIndividualTypes
-          ? formatIdentifier(identifier)
-          : identifier.imported;
+        const formattedIdentifier = formatIdentifier(
+          identifier,
+          suppressIndividualTypes,
+        );
         return `import ${statementTypePrefix}${formattedIdentifier} from ${quote}${source}${quote};`;
       }
       // Default + named imports
@@ -64,10 +65,13 @@ export function generateImportStatement(
       );
 
       // Format as single line
-      const defaultFormatted = hasIndividualTypes
-        ? formatIdentifier(defaultId)
-        : defaultId.imported;
-      const namedImportsStr = sortedNamed.map(formatIdentifier).join(', ');
+      const defaultFormatted = formatIdentifier(
+        defaultId,
+        suppressIndividualTypes,
+      );
+      const namedImportsStr = sortedNamed
+        .map(id => formatIdentifier(id, suppressIndividualTypes))
+        .join(', ');
       return `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
     }
 
@@ -80,7 +84,9 @@ export function generateImportStatement(
       );
 
       // Format as single line
-      const namedImportsStr = sortedIds.map(formatIdentifier).join(', ');
+      const namedImportsStr = sortedIds
+        .map(id => formatIdentifier(id, suppressIndividualTypes))
+        .join(', ');
       return `import ${statementTypePrefix}{ ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
     }
 
