@@ -15,33 +15,27 @@ export function detectFormattingPreferences(
 
     // Try to match regular imports with 'from' keyword (including multiline)
     const importWithFromMatch = remaining.match(
-      /import[\s\S]*?from\s*(['"])[^'"]*\1/i,
+      /import[\s\S]*?from\s*(['"])[^'"]*\1/iu,
     );
 
     // Try to match side-effect imports (import 'module')
-    const sideEffectMatch = remaining.match(/import\s*(['"])[^'"]*\1/i);
+    const sideEffectMatch = remaining.match(/import\s*(['"])[^'"]*\1/iu);
 
-    let match;
+    // eslint-disable-next-line @typescript-eslint/init-declarations
+    let match: RegExpMatchArray;
     const fromIndex = importWithFromMatch?.index ?? Infinity;
     const sideEffectIndex = sideEffectMatch?.index ?? Infinity;
 
-    if (importWithFromMatch && fromIndex <= sideEffectIndex) {
+    if (importWithFromMatch && fromIndex <= sideEffectIndex)
       match = importWithFromMatch;
-    } else if (sideEffectMatch) {
-      match = sideEffectMatch;
-    } else {
-      break;
-    }
+    else if (sideEffectMatch) match = sideEffectMatch;
+    else break;
 
     // Extract the quote character used for the import source
-    const quoteMatch = match[0].match(/(['"])[^'"]*\1$/);
-    if (quoteMatch) {
-      if (quoteMatch[1] === "'") {
-        singleQuoteCount++;
-      } else if (quoteMatch[1] === '"') {
-        doubleQuoteCount++;
-      }
-    }
+    const quoteMatch = match[0].match(/(['"])[^'"]*\1$/u);
+    if (quoteMatch)
+      if (quoteMatch[1] === "'") singleQuoteCount++;
+      else if (quoteMatch[1] === '"') doubleQuoteCount++;
 
     searchIndex += (match.index || 0) + match[0].length;
   }

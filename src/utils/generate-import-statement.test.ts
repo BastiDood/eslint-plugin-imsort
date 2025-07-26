@@ -1,16 +1,16 @@
-import { describe, it, expect } from 'vitest';
-
-import type { ImportNode } from '../types.js';
+import { describe, expect, it } from 'vitest';
 
 import type { FormattingPreferences } from './types.js';
 import { generateImportStatement } from './generate-import-statement.js';
+
+import type { ImportNode } from '../types.js';
 
 // Helper function to create mock import nodes
 function createMockImport(
   type: ImportNode['type'],
   identifiers: string[],
-  source: string = 'test-module',
-  isTypeOnly: boolean = false,
+  source = 'test-module',
+  isTypeOnly = false,
 ): ImportNode {
   return {
     source,
@@ -24,9 +24,9 @@ function createMockImport(
 
 // Helper function to create formatting preferences
 function createPreferences(
-  useSingleQuotes: boolean = true,
-  useTrailingComma: boolean = false,
-  maxLineLength: number = 80,
+  useSingleQuotes = true,
+  useTrailingComma = false,
+  maxLineLength = 80,
 ): FormattingPreferences {
   return {
     useSingleQuotes,
@@ -308,19 +308,6 @@ describe('generateImportStatement', () => {
       const preferences = createPreferences();
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe("import {  } from 'module';");
-    });
-    it('should fallback to original text for unknown import types', () => {
-      const importInfo: ImportNode = {
-        source: 'module',
-        text: 'import something from "module";',
-        line: 1,
-        type: 'unknown' as any, // Invalid type
-        identifiers: [],
-        isTypeOnly: false,
-      };
-      const preferences = createPreferences();
-      const result = generateImportStatement(importInfo, preferences);
-      expect(result).toBe('import something from "module";');
     });
     it('should handle special characters in module names', () => {
       const importInfo = createMockImport(

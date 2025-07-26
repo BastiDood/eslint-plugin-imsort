@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
-
-import type { ImportNode } from '../types.js';
+import { describe, expect, it } from 'vitest';
 
 import { sortImportsInGroup } from './sort-imports-in-group.js';
+
+import type { ImportNode } from '../types.js';
 
 // Helper function to create mock import nodes
 function createMockImport(
   type: ImportNode['type'],
   identifiers: string[],
-  source: string = 'test-module',
+  source = 'test-module',
 ): ImportNode {
   return {
     source,

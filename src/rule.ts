@@ -1,13 +1,13 @@
-import type { Rule } from 'eslint';
-import type { ImportDeclaration, Program } from 'estree';
 import { enumerate } from 'itertools';
+import type { ImportDeclaration, Program } from 'estree';
+import type { Rule } from 'eslint';
 
-import type { ImportNode } from './types.ts';
-import { extractImportInfo } from './utils/extract-import-info.ts';
-import { getImportGroupPriority } from './utils/get-import-group-priority.ts';
-import { sortImportsInGroup } from './utils/sort-imports-in-group.ts';
 import { detectFormattingPreferences } from './utils/detect-formatting-preferences.ts';
+import { extractImportInfo } from './utils/extract-import-info.ts';
 import { generateImportStatement } from './utils/generate-import-statement.ts';
+import { getImportGroupPriority } from './utils/get-import-group-priority.ts';
+import type { ImportNode } from './types.ts';
+import { sortImportsInGroup } from './utils/sort-imports-in-group.ts';
 
 export const sortImports: Rule.RuleModule = {
   meta: {
@@ -28,17 +28,14 @@ export const sortImports: Rule.RuleModule = {
         const imports: ImportNode[] = [];
         const importNodes: ImportDeclaration[] = [];
 
-        for (const statement of node.body) {
+        for (const statement of node.body)
           if (statement.type === 'ImportDeclaration') {
             const importInfo = extractImportInfo(statement, text);
             imports.push(importInfo);
             importNodes.push(statement);
           }
-        }
 
-        if (imports.length <= 1) {
-          return; // No sorting needed
-        }
+        if (imports.length <= 1) return; // No sorting needed
 
         // Group imports by priority
         const groups = new Map<number, ImportNode[]>();
@@ -46,11 +43,9 @@ export const sortImports: Rule.RuleModule = {
         for (const importInfo of imports) {
           const priority = getImportGroupPriority(importInfo.source);
           const existingGroup = groups.get(priority);
-          if (typeof existingGroup === 'undefined') {
+          if (typeof existingGroup === 'undefined')
             groups.set(priority, [importInfo]);
-          } else {
-            existingGroup.push(importInfo);
-          }
+          else existingGroup.push(importInfo);
         }
 
         // Sort groups by priority and sort within each group
@@ -67,12 +62,8 @@ export const sortImports: Rule.RuleModule = {
           const current = imports[i];
           const expected = expectedImports[i];
 
-          if (
-            typeof current === 'undefined' ||
-            typeof expected === 'undefined'
-          ) {
+          if (typeof current === 'undefined' || typeof expected === 'undefined')
             continue;
-          }
 
           // Compare based on first identifier only (or source for side-effect imports)
           const [currentFirstId = current.source] = current.identifiers;
@@ -95,9 +86,8 @@ export const sortImports: Rule.RuleModule = {
           if (
             typeof firstImport === 'undefined' ||
             typeof lastImport === 'undefined'
-          ) {
+          )
             return;
-          }
 
           context.report({
             node: firstImport,
@@ -119,9 +109,8 @@ export const sortImports: Rule.RuleModule = {
                   index > 0 &&
                   currentGroupPriority !== null &&
                   currentGroupPriority !== priority
-                ) {
+                )
                   sortedStatements.push('');
-                }
 
                 sortedStatements.push(
                   generateImportStatement(importInfo, preferences),
@@ -134,9 +123,8 @@ export const sortImports: Rule.RuleModule = {
               if (
                 typeof firstImport.range === 'undefined' ||
                 typeof lastImport.range === 'undefined'
-              ) {
+              )
                 return null;
-              }
 
               return fixer.replaceTextRange(
                 [firstImport.range[0], lastImport.range[1]],

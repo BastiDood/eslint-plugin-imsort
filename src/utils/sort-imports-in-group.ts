@@ -18,11 +18,10 @@ export function sortImportsInGroup(imports: ImportNode[]) {
     const [aFirstId = a.source] = a.identifiers;
     const [bFirstId = b.source] = b.identifiers;
 
-    if (typeof aFirstId === 'undefined' || typeof bFirstId === 'undefined') {
+    if (typeof aFirstId === 'undefined' || typeof bFirstId === 'undefined')
       return 0;
-    }
 
-    return aFirstId.localeCompare(bFirstId, undefined, {
+    return aFirstId.localeCompare(bFirstId, void 0, {
       numeric: true,
       sensitivity: 'base',
     });

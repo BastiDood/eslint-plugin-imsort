@@ -7,9 +7,8 @@ export function extractImportInfo(
   node: ImportDeclaration,
   sourceText: string,
 ): ImportNode {
-  if (typeof node.source.value !== 'string') {
+  if (typeof node.source.value !== 'string')
     throw new Error('Import source must be a string');
-  }
 
   const source = node.source.value;
 
@@ -17,19 +16,19 @@ export function extractImportInfo(
     typeof node.range === 'undefined' ||
     node.loc === null ||
     typeof node.loc === 'undefined'
-  ) {
+  )
     throw new Error('Node must have range and location information');
-  }
 
   const text = sourceText.slice(node.range[0], node.range[1]);
-  const line = node.loc.start.line;
+  const { line } = node.loc.start;
 
   // Check for TypeScript type-only imports
   // In TypeScript AST, this would be available as node.importKind === 'type'
   // For now, we'll detect it from the source text
-  const isTypeOnly = /^\s*import\s+type\s+/.test(text);
+  const isTypeOnly = /^\s*import\s+type\s+/u.test(text);
 
-  let type: ImportType = 'named';
+  // eslint-disable-next-line @typescript-eslint/init-declarations
+  let type: ImportType;
   const identifiers: string[] = [];
 
   if (node.specifiers.length === 0) {
@@ -43,9 +42,8 @@ export function extractImportInfo(
     const namespaceSpec = node.specifiers.find(
       spec => spec.type === 'ImportNamespaceSpecifier',
     );
-    if (namespaceSpec && namespaceSpec.type === 'ImportNamespaceSpecifier') {
+    if (namespaceSpec && namespaceSpec.type === 'ImportNamespaceSpecifier')
       identifiers.push(namespaceSpec.local.name);
-    }
   } else if (
     node.specifiers.some(spec => spec.type === 'ImportDefaultSpecifier')
   ) {
@@ -54,35 +52,31 @@ export function extractImportInfo(
     const defaultSpec = node.specifiers.find(
       spec => spec.type === 'ImportDefaultSpecifier',
     );
-    if (defaultSpec && defaultSpec.type === 'ImportDefaultSpecifier') {
+    if (defaultSpec && defaultSpec.type === 'ImportDefaultSpecifier')
       identifiers.push(defaultSpec.local.name);
-    }
+
     // Add named imports after default
     const namedSpecs = node.specifiers.filter(
       spec => spec.type === 'ImportSpecifier',
     );
-    for (const spec of namedSpecs) {
+    for (const spec of namedSpecs)
       if (
         spec.type === 'ImportSpecifier' &&
         spec.imported.type === 'Identifier'
-      ) {
+      )
         identifiers.push(spec.imported.name);
-      }
-    }
   } else {
     // Named imports only: import { a, b } from 'module'
     type = 'named';
     const namedSpecs = node.specifiers.filter(
       spec => spec.type === 'ImportSpecifier',
     );
-    for (const spec of namedSpecs) {
+    for (const spec of namedSpecs)
       if (
         spec.type === 'ImportSpecifier' &&
         spec.imported.type === 'Identifier'
-      ) {
+      )
         identifiers.push(spec.imported.name);
-      }
-    }
   }
 
   return {

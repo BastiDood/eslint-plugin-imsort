@@ -18,7 +18,7 @@ function createMockNode(
     | ImportNamespaceSpecifier
   )[] = [],
   range: [number, number] = [0, 50],
-  line: number = 1,
+  line = 1,
 ): ImportDeclaration {
   return {
     attributes: [],
@@ -248,14 +248,14 @@ describe('extractImportInfo', () => {
   describe('error handling', () => {
     it('should throw error for non-string import source', () => {
       const node = createMockNode('', []);
-      node.source.value = 123 as any; // Invalid source
+      node.source.value = 123; // Invalid source
       expect(() => extractImportInfo(node, 'import test;')).toThrow(
         'Import source must be a string',
       );
     });
     it('should throw error for missing range', () => {
       const node = createMockNode('react', []);
-      node.range = undefined;
+      node.range = void 0;
       expect(() => extractImportInfo(node, "import 'react';")).toThrow(
         'Node must have range and location information',
       );
@@ -269,7 +269,7 @@ describe('extractImportInfo', () => {
     });
     it('should throw error for undefined location', () => {
       const node = createMockNode('react', []);
-      node.loc = undefined as any;
+      node.loc = void 0;
       expect(() => extractImportInfo(node, "import 'react';")).toThrow(
         'Node must have range and location information',
       );
@@ -345,7 +345,7 @@ describe('extractImportInfo', () => {
           type: 'Literal',
           value: 'not-an-identifier',
           raw: '"not-an-identifier"',
-        } as any,
+        },
         local: createIdentifier('local'),
       };
       const node = createMockNode('module', [

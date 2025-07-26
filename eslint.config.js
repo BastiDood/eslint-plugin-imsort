@@ -1,3 +1,6 @@
+import js from '@eslint/js';
+import prettier from 'eslint-config-prettier';
+import ts from 'typescript-eslint';
 import { defineConfig } from 'eslint/config';
 
 import imsort from './src/index.ts';
@@ -6,9 +9,34 @@ export default defineConfig(
   { ignores: ['node_modules/**'] },
   {
     files: ['**/*.ts'],
+    extends: [
+      js.configs.recommended,
+      ...ts.configs.recommended,
+      ...ts.configs.stylistic,
+      prettier,
+    ],
     plugins: { imsort },
     rules: {
       'imsort/sort-imports': 'error',
+      '@typescript-eslint/class-methods-use-this': 'error',
+      '@typescript-eslint/default-param-last': 'error',
+      '@typescript-eslint/init-declarations': 'error',
+      '@typescript-eslint/method-signature-style': 'error',
+      '@typescript-eslint/no-import-type-side-effects': 'error',
+      '@typescript-eslint/no-loop-func': 'error',
+      '@typescript-eslint/no-unnecessary-parameter-property-assignment':
+        'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^_', argsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-use-before-define': 'error',
+      '@typescript-eslint/no-useless-empty-export': 'error',
+      '@typescript-eslint/parameter-properties': [
+        'error',
+        { prefer: 'parameter-property' },
+      ],
+      '@typescript-eslint/prefer-enum-initializers': 'error',
       'array-callback-return': ['error', { checkForEach: true }],
       'block-scoped-var': 'error',
       'class-methods-use-this': 'off',
@@ -91,7 +119,6 @@ export default defineConfig(
       'prefer-const': 'error',
       'prefer-destructuring': 'error',
       'prefer-exponentiation-operator': 'error',
-      'prefer-named-capture-group': 'error',
       'prefer-numeric-literals': 'error',
       'prefer-object-has-own': 'error',
       'prefer-object-spread': 'error',
@@ -104,7 +131,6 @@ export default defineConfig(
       'require-atomic-updates': 'error',
       'require-await': 'error',
       'require-unicode-regexp': 'error',
-      'sort-imports': ['error', { allowSeparatedGroups: true }],
       'symbol-description': 'error',
       yoda: ['warn', 'never', { exceptRange: true }],
     },
