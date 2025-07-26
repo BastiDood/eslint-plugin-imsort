@@ -1,13 +1,15 @@
-import type { ImportNode, ImportIdentifier } from '../types.ts';
+import type { ImportIdentifier, ImportNode } from '../types.ts';
 
 import type { FormattingPreferences } from './types.ts';
 
 /** Formats an identifier for import statement generation */
 function formatIdentifier(identifier: ImportIdentifier): string {
-  if (typeof identifier.local !== 'undefined') {
-    return `${identifier.imported} as ${identifier.local}`;
-  }
-  return identifier.imported;
+  const typePrefix = identifier.isTypeOnly === true ? 'type ' : '';
+
+  if (typeof identifier.local !== 'undefined')
+    return `${typePrefix}${identifier.imported} as ${identifier.local}`;
+
+  return `${typePrefix}${identifier.imported}`;
 }
 
 /** Generates the corrected import statement with improved formatting */
@@ -16,19 +18,26 @@ export function generateImportStatement(
   preferences: FormattingPreferences,
 ) {
   const { source, type, identifiers, isTypeOnly } = importInfo;
-  const typePrefix = isTypeOnly ? 'type ' : '';
+
+  // For full type-only imports, use the type prefix at statement level
+  // For mixed imports, individual identifiers will have their own type prefixes
+  const hasIndividualTypes = identifiers.some(id => id.isTypeOnly === true);
+  const statementTypePrefix = isTypeOnly && !hasIndividualTypes ? 'type ' : '';
   const quote = preferences.useSingleQuotes ? "'" : '"';
 
   switch (type) {
     case 'side-effect':
-      return `import ${typePrefix}${quote}${source}${quote};`;
+      return `import ${statementTypePrefix}${quote}${source}${quote};`;
 
     case 'namespace': {
       const [identifier] = identifiers;
       if (typeof identifier === 'undefined')
         throw new Error('Namespace identifier is required');
 
-      return `import ${typePrefix}* as ${identifier.imported} from ${quote}${source}${quote};`;
+      const formattedIdentifier = hasIndividualTypes
+        ? formatIdentifier(identifier)
+        : identifier.imported;
+      return `import ${statementTypePrefix}* as ${formattedIdentifier} from ${quote}${source}${quote};`;
     }
 
     case 'default': {
@@ -37,7 +46,10 @@ export function generateImportStatement(
         if (typeof identifier === 'undefined')
           throw new Error('Default identifier is required');
 
-        return `import ${typePrefix}${identifier.imported} from ${quote}${source}${quote};`;
+        const formattedIdentifier = hasIndividualTypes
+          ? formatIdentifier(identifier)
+          : identifier.imported;
+        return `import ${statementTypePrefix}${formattedIdentifier} from ${quote}${source}${quote};`;
       }
       // Default + named imports
       const [defaultId, ...namedIds] = identifiers;
@@ -52,8 +64,11 @@ export function generateImportStatement(
       );
 
       // Format based on length and preferences
+      const defaultFormatted = hasIndividualTypes
+        ? formatIdentifier(defaultId)
+        : defaultId.imported;
       const namedImportsStr = sortedNamed.map(formatIdentifier).join(', ');
-      const singleLineImport = `import ${typePrefix}${defaultId.imported}, { ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
+      const singleLineImport = `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
 
       if (singleLineImport.length <= preferences.maxLineLength)
         return singleLineImport;
@@ -62,7 +77,7 @@ export function generateImportStatement(
       const formattedNamed = sortedNamed
         .map(id => `  ${formatIdentifier(id)}`)
         .join(',\n');
-      return `import ${typePrefix}${defaultId.imported}, {\n${formattedNamed}${preferences.useTrailingComma ? ',' : ''}\n} from ${quote}${source}${quote};`;
+      return `import ${statementTypePrefix}${defaultFormatted}, {\n${formattedNamed}${preferences.useTrailingComma ? ',' : ''}\n} from ${quote}${source}${quote};`;
     }
 
     case 'named': {
@@ -75,7 +90,7 @@ export function generateImportStatement(
 
       // Format based on length and preferences
       const namedImportsStr = sortedIds.map(formatIdentifier).join(', ');
-      const singleLineImport = `import ${typePrefix}{ ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
+      const singleLineImport = `import ${statementTypePrefix}{ ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
 
       if (
         singleLineImport.length <= preferences.maxLineLength ||
@@ -87,7 +102,7 @@ export function generateImportStatement(
       const formattedIds = sortedIds
         .map(id => `  ${formatIdentifier(id)}`)
         .join(',\n');
-      return `import ${typePrefix}{\n${formattedIds}${preferences.useTrailingComma ? ',' : ''}\n} from ${quote}${source}${quote};`;
+      return `import ${statementTypePrefix}{\n${formattedIds}${preferences.useTrailingComma ? ',' : ''}\n} from ${quote}${source}${quote};`;
     }
 
     default:

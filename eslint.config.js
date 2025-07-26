@@ -6,7 +6,7 @@ import { defineConfig } from 'eslint/config';
 import imsort from './src/index.ts';
 
 export default defineConfig(
-  { ignores: ['node_modules/**'] },
+  { ignores: ['dist', 'node_modules'] },
   {
     files: ['**/*.{j,t}s{,x}'],
     extends: [

@@ -12,9 +12,8 @@ import { sortImportsInGroup } from './utils/sort-imports-in-group.ts';
 
 /** Check if identifiers within an import are sorted */
 function areIdentifiersSorted(importInfo: ImportNode): boolean {
-  if (importInfo.type === 'side-effect' || importInfo.type === 'namespace') {
+  if (importInfo.type === 'side-effect' || importInfo.type === 'namespace')
     return true; // These don't have sortable identifiers
-  }
 
   if (importInfo.type === 'default') {
     if (importInfo.identifiers.length <= 1) return true; // Just default import
@@ -101,15 +100,14 @@ export const sortImports: Rule.RuleModule = {
         let needsReordering = false;
 
         // First check if any individual import has unsorted identifiers
-        for (const importInfo of imports) {
+        for (const importInfo of imports)
           if (!areIdentifiersSorted(importInfo)) {
             needsReordering = true;
             break;
           }
-        }
 
         // Then check if import order is correct (only if identifiers are sorted)
-        if (!needsReordering && imports.length > 1) {
+        if (!needsReordering && imports.length > 1)
           for (let i = 0; i < imports.length; i++) {
             const current = imports[i];
             const expected = expectedImports[i];
@@ -135,7 +133,6 @@ export const sortImports: Rule.RuleModule = {
               break;
             }
           }
-        }
 
         if (needsReordering) {
           const [firstImport] = importNodes;

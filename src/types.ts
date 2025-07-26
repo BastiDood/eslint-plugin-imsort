@@ -4,7 +4,9 @@ export interface ImportIdentifier {
   /** The name being imported */
   imported: string;
   /** The local name (alias), if different from imported */
-  local?: string;
+  local?: string | undefined;
+  /** Whether this specific identifier is type-only (for mixed imports) */
+  isTypeOnly?: boolean;
 }
 
 export interface ImportNode {

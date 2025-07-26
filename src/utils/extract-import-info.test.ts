@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type {
+  Identifier,
   ImportDeclaration,
-  ImportSpecifier,
   ImportDefaultSpecifier,
   ImportNamespaceSpecifier,
-  Identifier,
+  ImportSpecifier,
 } from 'estree';
 
 import { extractImportInfo } from './extract-import-info.js';
@@ -158,8 +158,8 @@ describe('extractImportInfo', () => {
       expect(result.type).toBe('default');
       expect(result.identifiers).toEqual([
         { imported: 'React' },
-        { imported: 'useState', local: undefined },
-        { imported: 'useEffect', local: undefined },
+        { imported: 'useState' },
+        { imported: 'useEffect' },
       ]);
     });
     it('should handle aliased named imports with default', () => {
@@ -191,8 +191,8 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
-        { imported: 'useState', local: undefined },
-        { imported: 'useEffect', local: undefined },
+        { imported: 'useState' },
+        { imported: 'useEffect' },
       ]);
     });
     it('should handle single named import', () => {
@@ -202,9 +202,7 @@ describe('extractImportInfo', () => {
       const sourceText = "import { debounce } from 'lodash';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual([
-        { imported: 'debounce', local: undefined },
-      ]);
+      expect(result.identifiers).toEqual([{ imported: 'debounce' }]);
     });
     it('should handle many named imports', () => {
       const node = createMockNode('lodash', [
@@ -218,10 +216,10 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
-        { imported: 'map', local: undefined },
-        { imported: 'filter', local: undefined },
-        { imported: 'reduce', local: undefined },
-        { imported: 'forEach', local: undefined },
+        { imported: 'map' },
+        { imported: 'filter' },
+        { imported: 'reduce' },
+        { imported: 'forEach' },
       ]);
     });
   });
@@ -233,7 +231,7 @@ describe('extractImportInfo', () => {
       expect(result.isTypeOnly).toBe(true);
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
-        { imported: 'User', local: undefined },
+        { imported: 'User', isTypeOnly: true },
       ]);
     });
     it('should detect type imports with whitespace', () => {
@@ -318,7 +316,7 @@ describe('extractImportInfo', () => {
       expect(result.type).toBe('default');
       expect(result.identifiers).toEqual([
         { imported: 'Default' },
-        { imported: 'named', local: undefined },
+        { imported: 'named' },
       ]);
     });
     it('should handle mixed import specifier types', () => {
@@ -332,8 +330,8 @@ describe('extractImportInfo', () => {
       expect(result.type).toBe('default');
       expect(result.identifiers).toEqual([
         { imported: 'React' },
-        { imported: 'Component', local: undefined },
-        { imported: 'useState', local: undefined },
+        { imported: 'Component' },
+        { imported: 'useState' },
       ]);
     });
     it('should handle imports with complex source paths', () => {
@@ -357,8 +355,8 @@ describe('extractImportInfo', () => {
       expect(result.source).toBe('../../../utils/helpers');
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
-        { imported: 'formatDate', local: undefined },
-        { imported: 'parseUrl', local: undefined },
+        { imported: 'formatDate' },
+        { imported: 'parseUrl' },
       ]);
     });
     it('should filter out non-identifier imports', () => {
@@ -378,9 +376,7 @@ describe('extractImportInfo', () => {
       ]);
       const sourceText = "import { validImport } from 'module';";
       const result = extractImportInfo(node, sourceText);
-      expect(result.identifiers).toEqual([
-        { imported: 'validImport', local: undefined },
-      ]); // Should filter out non-identifier
+      expect(result.identifiers).toEqual([{ imported: 'validImport' }]); // Should filter out non-identifier
     });
     it('should handle very long import statements', () => {
       const longIdentifiers = Array.from(
@@ -393,7 +389,7 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual(
-        longIdentifiers.map(name => ({ imported: name, local: undefined })),
+        longIdentifiers.map(name => ({ imported: name })),
       );
       expect(result.identifiers).toHaveLength(20);
     });
@@ -420,9 +416,9 @@ describe('extractImportInfo', () => {
         type: 'default',
         identifiers: [
           { imported: 'React' },
-          { imported: 'useState', local: undefined },
-          { imported: 'useEffect', local: undefined },
-          { imported: 'useCallback', local: undefined },
+          { imported: 'useState' },
+          { imported: 'useEffect' },
+          { imported: 'useCallback' },
         ],
         isTypeOnly: false,
       });
@@ -438,9 +434,9 @@ describe('extractImportInfo', () => {
       expect(result.source).toBe('lodash/fp');
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
-        { imported: 'map', local: undefined },
-        { imported: 'filter', local: undefined },
-        { imported: 'compose', local: undefined },
+        { imported: 'map' },
+        { imported: 'filter' },
+        { imported: 'compose' },
       ]);
     });
     it('should handle TypeScript declaration imports', () => {
@@ -453,8 +449,8 @@ describe('extractImportInfo', () => {
       expect(result.isTypeOnly).toBe(true);
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
-        { imported: 'Buffer', local: undefined },
-        { imported: 'Process', local: undefined },
+        { imported: 'Buffer', isTypeOnly: true },
+        { imported: 'Process', isTypeOnly: true },
       ]);
     });
   });
