@@ -41,6 +41,18 @@ import { Component } from 'react';
 
 import { helper } from './helper';`);
     });
+
+    it('should handle correctly ordered parent-relative and relative imports', () => {
+      valid(`import { Component } from 'react';
+
+import { utils } from '@/utils';
+
+import { deep } from '../../deep';
+import { config } from '../config';
+
+import { helper } from './helper';
+import { types } from './types';`);
+    });
   });
 
   describe('invalid cases - detection', () => {
@@ -205,6 +217,42 @@ import 'side-effect-2';
 import { Component } from 'react';
 
 import { helper } from './helper';`,
+      });
+    });
+
+    it('should fix parent-relative imports before relative imports', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { config } from '../config';
+import { Component } from 'react';
+import { types } from './types';`,
+        errors: 1,
+        output: `import { Component } from 'react';
+
+import { config } from '../config';
+
+import { helper } from './helper';
+import { types } from './types';`,
+      });
+    });
+
+    it('should fix parent-relative imports by decreasing depth', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { shallow } from '../shallow';
+import { deep } from '../../deep';
+import { test } from './helper/test';
+import { deeper } from '../../../deeper';`,
+        errors: 1,
+        output: `import { deeper } from '../../../deeper';
+
+import { deep } from '../../deep';
+
+import { shallow } from '../shallow';
+
+import { helper } from './helper';
+
+import { test } from './helper/test';`,
       });
     });
   });

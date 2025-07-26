@@ -12,18 +12,33 @@ export function getImportGroupPriority(source: string): number {
   // Custom-aliased imports (@/*, ~/*, ~shared/*, etc.)
   if (/^(@\/|~[a-zA-Z0-9_-]*\/)/iu.test(source)) return 4;
 
-  // Relative imports starting with ./
-  if (source.startsWith('./')) return 6;
-
   // Parent-relative imports (../, ../../, etc.) - calculate depth
   const parentMatches = source.match(/^(\.\.\/)+/u);
   if (parentMatches) {
     const depth = parentMatches[0].split('../').length - 1;
-    return 5000 - depth; // Higher depth = higher priority within parent-relative group
+    return 50 - depth; // Deeper parents have lower priority (come first)
   }
 
   // Single .. import
-  if (source === '..') return 5001;
+  if (source === '..') return 49;
+
+  // Bare ./ import (edge case)
+  if (source === './') return 6;
+
+  // Current directory relative imports (./*)
+  if (source.startsWith('./')) {
+    // Count the depth of descendant imports
+    const pathParts = source.split('/');
+    const depth = pathParts.length - 2; // Subtract 2 for './' prefix and filename
+
+    if (depth === 0) {
+      // Same directory import (./filename)
+      return 50;
+    } else {
+      // Descendant import (./folder/filename, ./folder/subfolder/filename, etc.)
+      return 50 + depth;
+    }
+  }
 
   // Non-namespaced bare imports (react, express, @types/*, etc.)
   return 3;

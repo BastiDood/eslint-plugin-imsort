@@ -100,32 +100,42 @@ describe('getImportGroupPriority', () => {
       expect(getImportGroupPriority('~/components/Header')).toBe(4);
     });
   });
-  describe('parent-relative imports (priority 5000-depth)', () => {
+  describe('parent-relative imports (priority 50-depth)', () => {
     it('should handle single parent directory', () => {
-      expect(getImportGroupPriority('../utils')).toBe(4999); // 5000 - 1
-      expect(getImportGroupPriority('../components/Button')).toBe(4999);
+      expect(getImportGroupPriority('../utils')).toBe(49); // 50 - 1
+      expect(getImportGroupPriority('../components/Button')).toBe(49);
     });
     it('should handle multiple parent directories with decreasing priority', () => {
-      expect(getImportGroupPriority('../../utils')).toBe(4998); // 5000 - 2
-      expect(getImportGroupPriority('../../../lib')).toBe(4997); // 5000 - 3
-      expect(getImportGroupPriority('../../../../shared')).toBe(4996); // 5000 - 4
+      expect(getImportGroupPriority('../../utils')).toBe(48); // 50 - 2
+      expect(getImportGroupPriority('../../../lib')).toBe(47); // 50 - 3
+      expect(getImportGroupPriority('../../../../shared')).toBe(46); // 50 - 4
     });
     it('should handle bare .. import', () => {
-      expect(getImportGroupPriority('..')).toBe(5001);
+      expect(getImportGroupPriority('..')).toBe(49);
     });
     it('should calculate depth correctly for complex paths', () => {
-      expect(getImportGroupPriority('../../../../../../../deep')).toBe(4993); // 5000 - 7
+      expect(getImportGroupPriority('../../../../../../../deep')).toBe(43); // 50 - 7
     });
   });
-  describe('relative imports (priority 6)', () => {
-    it('should handle current directory imports', () => {
-      expect(getImportGroupPriority('./utils')).toBe(6);
-      expect(getImportGroupPriority('./components/Button')).toBe(6);
-      expect(getImportGroupPriority('./index')).toBe(6);
+  describe('relative imports', () => {
+    it('should handle current directory imports (priority 50)', () => {
+      expect(getImportGroupPriority('./utils')).toBe(50);
+      expect(getImportGroupPriority('./index')).toBe(50);
+      expect(getImportGroupPriority('./helper')).toBe(50);
     });
-    it('should handle subdirectory imports', () => {
-      expect(getImportGroupPriority('./lib/helpers')).toBe(6);
-      expect(getImportGroupPriority('./components/ui/Button')).toBe(6);
+
+    it('should handle descendant imports with increasing priority by depth', () => {
+      // Depth 1: ./folder/file
+      expect(getImportGroupPriority('./lib/helpers')).toBe(51); // 50 + 1
+      expect(getImportGroupPriority('./components/Button')).toBe(51); // 50 + 1
+      expect(getImportGroupPriority('./helper/test')).toBe(51); // 50 + 1
+
+      // Depth 2: ./folder/subfolder/file
+      expect(getImportGroupPriority('./components/ui/Button')).toBe(52); // 50 + 2
+      expect(getImportGroupPriority('./lib/utils/helpers')).toBe(52); // 50 + 2
+
+      // Depth 3: ./folder/subfolder/subsubfolder/file
+      expect(getImportGroupPriority('./components/ui/forms/Input')).toBe(53); // 50 + 3
     });
   });
   describe('edge cases', () => {
