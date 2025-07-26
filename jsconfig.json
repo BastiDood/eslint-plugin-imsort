@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "module": "nodenext",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "types": ["node"],
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "strict": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true
+  }
+}
