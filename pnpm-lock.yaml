@@ -7,12 +7,34 @@ settings:
 importers:
 
   .:
+    dependencies:
+      itertools:
+        specifier: ^2.4.1
+        version: 2.4.1
     devDependencies:
+      '@types/eslint':
+        specifier: ^9.6.1
+        version: 9.6.1
+      '@types/estree':
+        specifier: ^1.0.8
+        version: 1.0.8
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
 
 packages:
+
+  '@types/eslint@9.6.1':
+    resolution: {integrity: sha512-FXx2pKgId/WyYo2jXw63kk7/+TY7u7AziEJxJAnSFzHlqTAS3Ync6SvgYAN/k4/PQpnnVuzoMuVnByKK2qp0ag==}
+
+  '@types/estree@1.0.8':
+    resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
+
+  '@types/json-schema@7.0.15':
+    resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+
+  itertools@2.4.1:
+    resolution: {integrity: sha512-dFTSYzmbfeNE3q/qxwAr/QdKsK6/rp+LTz8SJdTg1+lo9omXFYpDcOKw47/7TevlnC0LorR5pRSf68+yB3N0GA==}
 
   prettier@3.6.2:
     resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
@@ -20,5 +42,16 @@ packages:
     hasBin: true
 
 snapshots:
+
+  '@types/eslint@9.6.1':
+    dependencies:
+      '@types/estree': 1.0.8
+      '@types/json-schema': 7.0.15
+
+  '@types/estree@1.0.8': {}
+
+  '@types/json-schema@7.0.15': {}
+
+  itertools@2.4.1: {}
 
   prettier@3.6.2: {}
