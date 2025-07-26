@@ -1,6 +1,6 @@
 import type { ImportDeclaration } from 'estree';
 
-import type { ImportNode, ImportType } from '../types.js';
+import type { ImportNode, ImportType } from '../types.ts';
 
 /** Extracts import information from an import declaration node */
 export function extractImportInfo(

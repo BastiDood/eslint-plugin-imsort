@@ -18,6 +18,9 @@ importers:
       '@types/estree':
         specifier: ^1.0.8
         version: 1.0.8
+      eslint:
+        specifier: ^9.32.0
+        version: 9.32.0
       eslint-vitest-rule-tester:
         specifier: ^2.2.0
         version: 2.2.0(eslint@9.32.0)(typescript@5.8.3)(vitest@3.2.4)

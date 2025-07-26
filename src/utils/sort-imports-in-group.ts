@@ -1,4 +1,4 @@
-import type { ImportNode, ImportTypeOrder } from '../types.js';
+import type { ImportNode, ImportTypeOrder } from '../types.ts';
 
 export function sortImportsInGroup(imports: ImportNode[]) {
   return imports.sort((a, b) => {

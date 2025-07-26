@@ -1,4 +1,4 @@
-import type { FormattingPreferences } from './types.js';
+import type { FormattingPreferences } from './types.ts';
 
 export function detectFormattingPreferences(
   sourceText: string,

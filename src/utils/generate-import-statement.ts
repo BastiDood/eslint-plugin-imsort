@@ -1,6 +1,6 @@
-import type { ImportNode } from '../types.js';
+import type { ImportNode } from '../types.ts';
 
-import type { FormattingPreferences } from './types.js';
+import type { FormattingPreferences } from './types.ts';
 
 /** Generates the corrected import statement with improved formatting */
 export function generateImportStatement(

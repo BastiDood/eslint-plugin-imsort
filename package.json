@@ -12,6 +12,8 @@
   "scripts": {
     "fmt": "prettier --experimental-cli . --check",
     "fmt:fix": "prettier --experimental-cli . --write",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "test": "vitest",
     "test:run": "vitest run",
     "test:watch": "vitest watch"
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@types/eslint": "^9.6.1",
     "@types/estree": "^1.0.8",
+    "eslint": "^9.32.0",
     "eslint-vitest-rule-tester": "^2.2.0",
     "prettier": "^3.6.2",
     "vitest": "^3.2.4"
