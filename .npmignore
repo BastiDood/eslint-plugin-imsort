@@ -2,6 +2,7 @@
 src/**/*.test.ts
 
 # Development
+.github
 .prettierignore
 .prettierrc.json
 eslint.config.js
