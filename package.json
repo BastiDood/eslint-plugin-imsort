@@ -3,11 +3,11 @@
   "description": "An opinionated ESLint plugin for sorting imports.",
   "version": "0.1.0",
   "type": "module",
-  "exports": "./src/index.ts",
+  "files": [
+    "dist/index.js"
+  ],
+  "exports": "./dist/index.js",
   "packageManager": "pnpm@10.14.0-0+sha512.2cd47a0cbf5f1d1de7693a88307a0ede5be94e0d3b34853d800ee775efbea0650cb562b77605ec80bc8d925f5cd27c4dfe8bb04d3a0b76090784c664450d32d6",
-  "engines": {
-    "node": ">=22.6.0"
-  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -28,7 +28,8 @@
     "lint:fix": "eslint --fix",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "build": "tsup"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -38,6 +39,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-vitest-rule-tester": "^2.2.0",
     "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
     "typescript-eslint": "^8.38.0",
     "vitest": "^3.2.4"
   },
