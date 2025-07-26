@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ImportNode } from '../types.js';
+import type { ImportNode, ImportIdentifier } from '../types.js';
 
 import type { FormattingPreferences } from './types.js';
 import { generateImportStatement } from './generate-import-statement.js';
@@ -17,7 +17,7 @@ function createMockImport(
     text: '', // Not used in generation
     line: 1,
     type,
-    identifiers,
+    identifiers: identifiers.map(name => ({ imported: name })),
     isTypeOnly,
   };
 }

@@ -80,7 +80,7 @@ describe('extractImportInfo', () => {
         text: "import React from 'react';",
         line: 1,
         type: 'default',
-        identifiers: ['React'],
+        identifiers: [{ imported: 'React' }],
         isTypeOnly: false,
       });
     });
@@ -128,14 +128,14 @@ describe('extractImportInfo', () => {
       const sourceText = "import * as React from 'react';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('namespace');
-      expect(result.identifiers).toEqual(['React']);
+      expect(result.identifiers).toEqual([{ imported: 'React' }]);
     });
     it('should handle utility namespace imports', () => {
       const node = createMockNode('lodash', [createNamespaceSpecifier('_')]);
       const sourceText = "import * as _ from 'lodash';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('namespace');
-      expect(result.identifiers).toEqual(['_']);
+      expect(result.identifiers).toEqual([{ imported: '_' }]);
       expect(result.source).toBe('lodash');
     });
   });
@@ -145,7 +145,7 @@ describe('extractImportInfo', () => {
       const sourceText = "import React from 'react';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('default');
-      expect(result.identifiers).toEqual(['React']);
+      expect(result.identifiers).toEqual([{ imported: 'React' }]);
     });
     it('should handle default + named imports', () => {
       const node = createMockNode('react', [
@@ -156,7 +156,11 @@ describe('extractImportInfo', () => {
       const sourceText = "import React, { useState, useEffect } from 'react';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('default');
-      expect(result.identifiers).toEqual(['React', 'useState', 'useEffect']);
+      expect(result.identifiers).toEqual([
+        { imported: 'React' },
+        { imported: 'useState', local: undefined },
+        { imported: 'useEffect', local: undefined },
+      ]);
     });
     it('should handle aliased named imports with default', () => {
       const node = createMockNode('react', [
@@ -171,7 +175,10 @@ describe('extractImportInfo', () => {
         "import React, { useState as useStateHook } from 'react';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('default');
-      expect(result.identifiers).toEqual(['React', 'useState']);
+      expect(result.identifiers).toEqual([
+        { imported: 'React' },
+        { imported: 'useState', local: 'useStateHook' },
+      ]);
     });
   });
   describe('named imports', () => {
@@ -183,7 +190,10 @@ describe('extractImportInfo', () => {
       const sourceText = "import { useState, useEffect } from 'react';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual(['useState', 'useEffect']);
+      expect(result.identifiers).toEqual([
+        { imported: 'useState', local: undefined },
+        { imported: 'useEffect', local: undefined },
+      ]);
     });
     it('should handle single named import', () => {
       const node = createMockNode('lodash', [
@@ -192,7 +202,9 @@ describe('extractImportInfo', () => {
       const sourceText = "import { debounce } from 'lodash';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual(['debounce']);
+      expect(result.identifiers).toEqual([
+        { imported: 'debounce', local: undefined },
+      ]);
     });
     it('should handle many named imports', () => {
       const node = createMockNode('lodash', [
@@ -206,10 +218,10 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
-        'map',
-        'filter',
-        'reduce',
-        'forEach',
+        { imported: 'map', local: undefined },
+        { imported: 'filter', local: undefined },
+        { imported: 'reduce', local: undefined },
+        { imported: 'forEach', local: undefined },
       ]);
     });
   });
@@ -220,7 +232,9 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.isTypeOnly).toBe(true);
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual(['User']);
+      expect(result.identifiers).toEqual([
+        { imported: 'User', local: undefined },
+      ]);
     });
     it('should detect type imports with whitespace', () => {
       const node = createMockNode('./types', [createDefaultSpecifier('Types')]);
@@ -292,7 +306,7 @@ describe('extractImportInfo', () => {
       const sourceText = "import Default, * as All from 'module';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('namespace');
-      expect(result.identifiers).toEqual(['All']);
+      expect(result.identifiers).toEqual([{ imported: 'All' }]);
     });
     it('should prioritize default over named when both present', () => {
       const node = createMockNode('module', [
@@ -302,7 +316,10 @@ describe('extractImportInfo', () => {
       const sourceText = "import Default, { named } from 'module';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('default');
-      expect(result.identifiers).toEqual(['Default', 'named']);
+      expect(result.identifiers).toEqual([
+        { imported: 'Default' },
+        { imported: 'named', local: undefined },
+      ]);
     });
     it('should handle mixed import specifier types', () => {
       const node = createMockNode('react', [
@@ -313,7 +330,11 @@ describe('extractImportInfo', () => {
       const sourceText = "import React, { Component, useState } from 'react';";
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('default');
-      expect(result.identifiers).toEqual(['React', 'Component', 'useState']);
+      expect(result.identifiers).toEqual([
+        { imported: 'React' },
+        { imported: 'Component', local: undefined },
+        { imported: 'useState', local: undefined },
+      ]);
     });
     it('should handle imports with complex source paths', () => {
       const node = createMockNode('@/components/ui/button', [
@@ -323,7 +344,7 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.source).toBe('@/components/ui/button');
       expect(result.type).toBe('default');
-      expect(result.identifiers).toEqual(['Button']);
+      expect(result.identifiers).toEqual([{ imported: 'Button' }]);
     });
     it('should handle imports with relative paths', () => {
       const node = createMockNode('../../../utils/helpers', [
@@ -335,7 +356,10 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.source).toBe('../../../utils/helpers');
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual(['formatDate', 'parseUrl']);
+      expect(result.identifiers).toEqual([
+        { imported: 'formatDate', local: undefined },
+        { imported: 'parseUrl', local: undefined },
+      ]);
     });
     it('should filter out non-identifier imports', () => {
       // Create a mock specifier with a non-identifier imported value
@@ -354,7 +378,9 @@ describe('extractImportInfo', () => {
       ]);
       const sourceText = "import { validImport } from 'module';";
       const result = extractImportInfo(node, sourceText);
-      expect(result.identifiers).toEqual(['validImport']); // Should filter out non-identifier
+      expect(result.identifiers).toEqual([
+        { imported: 'validImport', local: undefined },
+      ]); // Should filter out non-identifier
     });
     it('should handle very long import statements', () => {
       const longIdentifiers = Array.from(
@@ -366,7 +392,9 @@ describe('extractImportInfo', () => {
       const sourceText = `import { ${longIdentifiers.join(', ')} } from 'large-module';`;
       const result = extractImportInfo(node, sourceText);
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual(longIdentifiers);
+      expect(result.identifiers).toEqual(
+        longIdentifiers.map(name => ({ imported: name, local: undefined })),
+      );
       expect(result.identifiers).toHaveLength(20);
     });
   });
@@ -390,7 +418,12 @@ describe('extractImportInfo', () => {
         text: "import React, { useState, useEffect, useCallback } from 'react';",
         line: 1,
         type: 'default',
-        identifiers: ['React', 'useState', 'useEffect', 'useCallback'],
+        identifiers: [
+          { imported: 'React' },
+          { imported: 'useState', local: undefined },
+          { imported: 'useEffect', local: undefined },
+          { imported: 'useCallback', local: undefined },
+        ],
         isTypeOnly: false,
       });
     });
@@ -404,7 +437,11 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.source).toBe('lodash/fp');
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual(['map', 'filter', 'compose']);
+      expect(result.identifiers).toEqual([
+        { imported: 'map', local: undefined },
+        { imported: 'filter', local: undefined },
+        { imported: 'compose', local: undefined },
+      ]);
     });
     it('should handle TypeScript declaration imports', () => {
       const node = createMockNode('@types/node', [
@@ -415,7 +452,10 @@ describe('extractImportInfo', () => {
       const result = extractImportInfo(node, sourceText);
       expect(result.isTypeOnly).toBe(true);
       expect(result.type).toBe('named');
-      expect(result.identifiers).toEqual(['Buffer', 'Process']);
+      expect(result.identifiers).toEqual([
+        { imported: 'Buffer', local: undefined },
+        { imported: 'Process', local: undefined },
+      ]);
     });
   });
 });

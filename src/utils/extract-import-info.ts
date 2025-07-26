@@ -1,6 +1,6 @@
 import type { ImportDeclaration } from 'estree';
 
-import type { ImportNode, ImportType } from '../types.ts';
+import type { ImportNode, ImportType, ImportIdentifier } from '../types.ts';
 
 /** Extracts import information from an import declaration node */
 export function extractImportInfo(
@@ -29,7 +29,7 @@ export function extractImportInfo(
 
   // eslint-disable-next-line @typescript-eslint/init-declarations
   let type: ImportType;
-  const identifiers: string[] = [];
+  const identifiers: ImportIdentifier[] = [];
 
   if (node.specifiers.length === 0) {
     // Side-effect import: import 'module'
@@ -43,7 +43,7 @@ export function extractImportInfo(
       spec => spec.type === 'ImportNamespaceSpecifier',
     );
     if (namespaceSpec && namespaceSpec.type === 'ImportNamespaceSpecifier')
-      identifiers.push(namespaceSpec.local.name);
+      identifiers.push({ imported: namespaceSpec.local.name });
   } else if (
     node.specifiers.some(spec => spec.type === 'ImportDefaultSpecifier')
   ) {
@@ -53,7 +53,7 @@ export function extractImportInfo(
       spec => spec.type === 'ImportDefaultSpecifier',
     );
     if (defaultSpec && defaultSpec.type === 'ImportDefaultSpecifier')
-      identifiers.push(defaultSpec.local.name);
+      identifiers.push({ imported: defaultSpec.local.name });
 
     // Add named imports after default
     const namedSpecs = node.specifiers.filter(
@@ -63,8 +63,14 @@ export function extractImportInfo(
       if (
         spec.type === 'ImportSpecifier' &&
         spec.imported.type === 'Identifier'
-      )
-        identifiers.push(spec.imported.name);
+      ) {
+        const imported = spec.imported.name;
+        const local = spec.local.name;
+        identifiers.push({
+          imported,
+          local: imported !== local ? local : undefined,
+        });
+      }
   } else {
     // Named imports only: import { a, b } from 'module'
     type = 'named';
@@ -75,8 +81,14 @@ export function extractImportInfo(
       if (
         spec.type === 'ImportSpecifier' &&
         spec.imported.type === 'Identifier'
-      )
-        identifiers.push(spec.imported.name);
+      ) {
+        const imported = spec.imported.name;
+        const local = spec.local.name;
+        identifiers.push({
+          imported,
+          local: imported !== local ? local : undefined,
+        });
+      }
   }
 
   return {

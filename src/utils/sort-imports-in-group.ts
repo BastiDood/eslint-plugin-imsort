@@ -15,8 +15,8 @@ export function sortImportsInGroup(imports: ImportNode[]) {
     if (typeDiff !== 0) return typeDiff;
 
     // Then sort by first identifier (or source for side-effect imports)
-    const [aFirstId = a.source] = a.identifiers;
-    const [bFirstId = b.source] = b.identifiers;
+    const aFirstId = a.identifiers[0]?.imported ?? a.source;
+    const bFirstId = b.identifiers[0]?.imported ?? b.source;
 
     if (typeof aFirstId === 'undefined' || typeof bFirstId === 'undefined')
       return 0;

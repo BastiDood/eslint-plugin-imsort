@@ -10,6 +10,46 @@ import { generateImportStatement } from './utils/generate-import-statement.ts';
 import { getImportGroupPriority } from './utils/get-import-group-priority.ts';
 import { sortImportsInGroup } from './utils/sort-imports-in-group.ts';
 
+/** Check if identifiers within an import are sorted */
+function areIdentifiersSorted(importInfo: ImportNode): boolean {
+  if (importInfo.type === 'side-effect' || importInfo.type === 'namespace') {
+    return true; // These don't have sortable identifiers
+  }
+
+  if (importInfo.type === 'default') {
+    if (importInfo.identifiers.length <= 1) return true; // Just default import
+    // For default + named imports, check if named imports (after first) are sorted
+    const namedIdentifiers = importInfo.identifiers.slice(1);
+    if (namedIdentifiers.length <= 1) return true;
+
+    const sortedNamed = [...namedIdentifiers].sort((a, b) =>
+      a.imported.localeCompare(b.imported, void 0, {
+        numeric: true,
+        sensitivity: 'base',
+      }),
+    );
+    return namedIdentifiers.every(
+      (id, index) => id.imported === sortedNamed[index]?.imported,
+    );
+  }
+
+  if (importInfo.type === 'named') {
+    if (importInfo.identifiers.length <= 1) return true;
+
+    const sortedIdentifiers = [...importInfo.identifiers].sort((a, b) =>
+      a.imported.localeCompare(b.imported, void 0, {
+        numeric: true,
+        sensitivity: 'base',
+      }),
+    );
+    return importInfo.identifiers.every(
+      (id, index) => id.imported === sortedIdentifiers[index]?.imported,
+    );
+  }
+
+  return true;
+}
+
 export const sortImports: Rule.RuleModule = {
   meta: {
     type: 'layout',
@@ -36,7 +76,7 @@ export const sortImports: Rule.RuleModule = {
             importNodes.push(statement);
           }
 
-        if (imports.length <= 1) return; // No sorting needed
+        if (imports.length === 0) return; // No imports to sort
 
         // Group imports by priority
         const groups = new Map<number, ImportNode[]>();
@@ -57,26 +97,43 @@ export const sortImports: Rule.RuleModule = {
         // Generate the expected import order
         const expectedImports = sortedGroups.flat();
 
-        // Check if current order matches expected order
+        // Check if current order matches expected order OR if any identifiers are unsorted
         let needsReordering = false;
-        for (let i = 0; i < imports.length; i++) {
-          const current = imports[i];
-          const expected = expectedImports[i];
 
-          if (typeof current === 'undefined' || typeof expected === 'undefined')
-            continue;
-
-          // Compare based on first identifier only (or source for side-effect imports)
-          const [currentFirstId = current.source] = current.identifiers;
-          const [expectedFirstId = expected.source] = expected.identifiers;
-
-          if (
-            current.source !== expected.source ||
-            current.type !== expected.type ||
-            currentFirstId !== expectedFirstId
-          ) {
+        // First check if any individual import has unsorted identifiers
+        for (const importInfo of imports) {
+          if (!areIdentifiersSorted(importInfo)) {
             needsReordering = true;
             break;
+          }
+        }
+
+        // Then check if import order is correct (only if identifiers are sorted)
+        if (!needsReordering && imports.length > 1) {
+          for (let i = 0; i < imports.length; i++) {
+            const current = imports[i];
+            const expected = expectedImports[i];
+
+            if (
+              typeof current === 'undefined' ||
+              typeof expected === 'undefined'
+            )
+              continue;
+
+            // Compare based on first identifier only (or source for side-effect imports)
+            const currentFirstId =
+              current.identifiers[0]?.imported ?? current.source;
+            const expectedFirstId =
+              expected.identifiers[0]?.imported ?? expected.source;
+
+            if (
+              current.source !== expected.source ||
+              current.type !== expected.type ||
+              currentFirstId !== expectedFirstId
+            ) {
+              needsReordering = true;
+              break;
+            }
           }
         }
 

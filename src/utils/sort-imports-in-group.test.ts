@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ImportNode } from '../types.js';
+import type { ImportNode, ImportIdentifier } from '../types.js';
 
 import { sortImportsInGroup } from './sort-imports-in-group.js';
 
@@ -15,7 +15,7 @@ function createMockImport(
     text: `import ${identifiers.join(', ')} from '${source}';`,
     line: 1,
     type,
-    identifiers,
+    identifiers: identifiers.map(name => ({ imported: name })),
     isTypeOnly: false,
   };
 }
@@ -57,7 +57,7 @@ describe('sortImportsInGroup', () => {
         createMockImport('named', ['debounce', 'throttle'], 'lodash'),
       ];
       const sorted = sortImportsInGroup(imports);
-      expect(sorted.map(imp => imp.identifiers[0])).toEqual([
+      expect(sorted.map(imp => imp.identifiers[0]?.imported)).toEqual([
         'axios',
         'debounce',
         'useState',
@@ -70,7 +70,7 @@ describe('sortImportsInGroup', () => {
         createMockImport('default', ['lodash'], 'lodash'),
       ];
       const sorted = sortImportsInGroup(imports);
-      expect(sorted.map(imp => imp.identifiers[0])).toEqual([
+      expect(sorted.map(imp => imp.identifiers[0]?.imported)).toEqual([
         'axios',
         'lodash',
         'React',
@@ -83,7 +83,7 @@ describe('sortImportsInGroup', () => {
         createMockImport('namespace', ['helpers'], 'helpers'),
       ];
       const sorted = sortImportsInGroup(imports);
-      expect(sorted.map(imp => imp.identifiers[0])).toEqual([
+      expect(sorted.map(imp => imp.identifiers[0]?.imported)).toEqual([
         'api',
         'helpers',
         'utils',
@@ -113,7 +113,7 @@ describe('sortImportsInGroup', () => {
         createMockImport('named', ['item1'], 'module'),
       ];
       const sorted = sortImportsInGroup(imports);
-      expect(sorted.map(imp => imp.identifiers[0])).toEqual([
+      expect(sorted.map(imp => imp.identifiers[0]?.imported)).toEqual([
         'item1',
         'item2',
         'item10',
@@ -126,7 +126,7 @@ describe('sortImportsInGroup', () => {
         createMockImport('named', ['Beta'], 'module'),
       ];
       const sorted = sortImportsInGroup(imports);
-      expect(sorted.map(imp => imp.identifiers[0])).toEqual([
+      expect(sorted.map(imp => imp.identifiers[0]?.imported)).toEqual([
         'alpha',
         'Beta',
         'Zeus',
@@ -148,7 +148,9 @@ describe('sortImportsInGroup', () => {
         'named',
       ]);
       // All should have same first identifier
-      expect(sorted.every(imp => imp.identifiers[0] === 'React')).toBe(true);
+      expect(
+        sorted.every(imp => imp.identifiers[0]?.imported === 'React'),
+      ).toBe(true);
     });
     it('should handle empty identifiers gracefully', () => {
       const imports: ImportNode[] = [
@@ -189,7 +191,7 @@ describe('sortImportsInGroup', () => {
       expect(
         sorted.map(imp => ({
           type: imp.type,
-          firstId: imp.identifiers[0] || imp.source,
+          firstId: imp.identifiers[0]?.imported || imp.source,
         })),
       ).toEqual([
         { type: 'side-effect', firstId: 'react-dom/styles.css' },

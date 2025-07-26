@@ -1,5 +1,12 @@
 export type ImportType = 'namespace' | 'default' | 'named' | 'side-effect';
 
+export interface ImportIdentifier {
+  /** The name being imported */
+  imported: string;
+  /** The local name (alias), if different from imported */
+  local?: string;
+}
+
 export interface ImportNode {
   /** The import source */
   source: string;
@@ -9,8 +16,8 @@ export interface ImportNode {
   line: number;
   /** Import type: 'namespace', 'default', 'named', 'side-effect' */
   type: ImportType;
-  /** Import identifiers */
-  identifiers: string[];
+  /** Import identifiers with alias information */
+  identifiers: ImportIdentifier[];
   /** Whether this is a type-only import */
   isTypeOnly: boolean;
 }
