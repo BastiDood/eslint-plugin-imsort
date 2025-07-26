@@ -384,8 +384,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Component } from 'react';
 import { util } from './util';`,
         errors: 1,
-        output: `import { useCallback, useEffect, useState } from 'react';
-import { Component } from 'react';
+        output: `import { Component } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { helper } from './helper';
 import { util } from './util';`,
@@ -398,8 +398,8 @@ import { util } from './util';`,
 import { single } from 'single-external';
 import { c, b, a as aliased } from './relative';`,
         errors: 1,
-        output: `import { single } from 'single-external';
-import { a, m, z } from 'external';
+        output: `import { a, m, z } from 'external';
+import { single } from 'single-external';
 
 import { a as aliased, b, c } from './relative';`,
       });

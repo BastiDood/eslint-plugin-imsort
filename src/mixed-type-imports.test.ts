@@ -1,14 +1,14 @@
-import { describe, expect, it } from 'vitest';
 import type {
   ImportDeclaration,
   ImportDefaultSpecifier,
   ImportNamespaceSpecifier,
   ImportSpecifier,
 } from 'estree';
+import { describe, expect, it } from 'vitest';
 
 import { extractImportInfo } from './utils/extract-import-info.js';
-import type { FormattingPreferences } from './utils/types.js';
 import { generateImportStatement } from './utils/generate-import-statement.js';
+import type { FormattingPreferences } from './utils/types.js';
 
 // Mock AST node creation helpers
 function createMockNode(
@@ -57,7 +57,6 @@ function createDefaultSpecifier(name: string): ImportDefaultSpecifier {
 const defaultPreferences: FormattingPreferences = {
   useSingleQuotes: true,
   useTrailingComma: false,
-  maxLineLength: 80,
 };
 
 describe('Mixed type imports support', () => {
@@ -302,17 +301,13 @@ describe('Mixed type imports support', () => {
 
       const preferences: FormattingPreferences = {
         ...defaultPreferences,
-        maxLineLength: 40, // Force multi-line
       };
 
       const result = generateImportStatement(importNode, preferences);
 
-      expect(result).toBe(`import {
-  type Config,
-  helper,
-  type User,
-  value
-} from './types';`);
+      expect(result).toBe(
+        `import { type Config, helper, type User, value } from './types';`,
+      );
     });
   });
 

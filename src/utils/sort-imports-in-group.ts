@@ -14,7 +14,14 @@ export function sortImportsInGroup(imports: ImportNode[]) {
     const typeDiff = aTypeOrder - bTypeOrder;
     if (typeDiff !== 0) return typeDiff;
 
-    // Then sort by first identifier (or source for side-effect imports)
+    // Then sort by source for different sources within the same type
+    const sourceComparison = a.source.localeCompare(b.source, void 0, {
+      numeric: true,
+      sensitivity: 'base',
+    });
+    if (sourceComparison !== 0) return sourceComparison;
+
+    // Finally sort by first identifier within the same source and type
     const aFirstId = a.identifiers[0]?.imported ?? a.source;
     const bFirstId = b.identifiers[0]?.imported ?? b.source;
 

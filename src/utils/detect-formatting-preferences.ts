@@ -2,6 +2,7 @@ import type { FormattingPreferences } from './types.ts';
 
 export function detectFormattingPreferences(
   sourceText: string,
+  importText?: string,
 ): FormattingPreferences {
   // Detect quote preference by counting occurrences in import statements
   let singleQuoteCount = 0;
@@ -40,12 +41,12 @@ export function detectFormattingPreferences(
     searchIndex += (match.index || 0) + match[0].length;
   }
 
-  // Detect trailing comma preference - look for commas before closing brace
-  const hasTrailingComma = /import[^{]*\{[^}]*,\s*\}/isu.test(sourceText);
+  // Detect trailing comma preference - check specific import if provided, otherwise global
+  const textToCheck = importText ?? sourceText;
+  const hasTrailingComma = /import[^{]*\{[^}]*,\s*\}/isu.test(textToCheck);
 
   return {
     useSingleQuotes: singleQuoteCount > doubleQuoteCount,
     useTrailingComma: hasTrailingComma,
-    maxLineLength: 80, // Default, could be enhanced to detect from existing code
   };
 }

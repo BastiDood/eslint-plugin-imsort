@@ -1,6 +1,6 @@
-import { enumerate } from 'itertools';
-import type { ImportDeclaration, Program } from 'estree';
 import type { Rule } from 'eslint';
+import type { ImportDeclaration, Program } from 'estree';
+import { enumerate } from 'itertools';
 
 import type { ImportNode } from './types.ts';
 
@@ -149,8 +149,8 @@ export const sortImports: Rule.RuleModule = {
             message:
               'Imports should be sorted and grouped according to the specified rules',
             fix(fixer) {
-              // Detect formatting preferences
-              const preferences = detectFormattingPreferences(text);
+              // Detect formatting preferences from the source text
+              const globalPreferences = detectFormattingPreferences(text);
 
               // Generate sorted import statements with proper grouping
               const sortedStatements: string[] = [];
@@ -166,6 +166,17 @@ export const sortImports: Rule.RuleModule = {
                   currentGroupPriority !== priority
                 )
                   sortedStatements.push('');
+
+                // Detect formatting preferences for this specific import
+                const importPreferences = detectFormattingPreferences(
+                  text,
+                  importInfo.text,
+                );
+                // Use global quote preference but import-specific trailing comma preference
+                const preferences = {
+                  ...globalPreferences,
+                  useTrailingComma: importPreferences.useTrailingComma,
+                };
 
                 sortedStatements.push(
                   generateImportStatement(importInfo, preferences),

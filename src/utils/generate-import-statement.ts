@@ -63,21 +63,12 @@ export function generateImportStatement(
         }),
       );
 
-      // Format based on length and preferences
+      // Format as single line
       const defaultFormatted = hasIndividualTypes
         ? formatIdentifier(defaultId)
         : defaultId.imported;
       const namedImportsStr = sortedNamed.map(formatIdentifier).join(', ');
-      const singleLineImport = `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
-
-      if (singleLineImport.length <= preferences.maxLineLength)
-        return singleLineImport;
-
-      // Multi-line format for long imports
-      const formattedNamed = sortedNamed
-        .map(id => `  ${formatIdentifier(id)}`)
-        .join(',\n');
-      return `import ${statementTypePrefix}${defaultFormatted}, {\n${formattedNamed}${preferences.useTrailingComma ? ',' : ''}\n} from ${quote}${source}${quote};`;
+      return `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
     }
 
     case 'named': {
@@ -88,21 +79,9 @@ export function generateImportStatement(
         }),
       );
 
-      // Format based on length and preferences
+      // Format as single line
       const namedImportsStr = sortedIds.map(formatIdentifier).join(', ');
-      const singleLineImport = `import ${statementTypePrefix}{ ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
-
-      if (
-        singleLineImport.length <= preferences.maxLineLength ||
-        sortedIds.length <= 3
-      )
-        return singleLineImport;
-
-      // Multi-line format for long imports
-      const formattedIds = sortedIds
-        .map(id => `  ${formatIdentifier(id)}`)
-        .join(',\n');
-      return `import ${statementTypePrefix}{\n${formattedIds}${preferences.useTrailingComma ? ',' : ''}\n} from ${quote}${source}${quote};`;
+      return `import ${statementTypePrefix}{ ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
     }
 
     default:

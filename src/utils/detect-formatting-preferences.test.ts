@@ -110,15 +110,6 @@ describe('detectFormattingPreferences', () => {
       expect(preferences.useTrailingComma).toBe(false);
     });
   });
-  describe('maxLineLength setting', () => {
-    it('should always return default maxLineLength of 80', () => {
-      const sourceText = `
-        import { veryLongImportNameThatExceedsTypicalLineLengths } from 'some-very-long-module-name';
-      `;
-      const preferences = detectFormattingPreferences(sourceText);
-      expect(preferences.maxLineLength).toBe(80);
-    });
-  });
   describe('complex real-world scenarios', () => {
     it('should handle TypeScript import syntax', () => {
       const sourceText = `
@@ -172,12 +163,11 @@ describe('detectFormattingPreferences', () => {
       expect(preferences.useTrailingComma).toBe(true);
     });
   });
-  describe('edge cases', () => {
+  describe('comprehensive edge cases', () => {
     it('should handle empty string', () => {
       const preferences = detectFormattingPreferences('');
       expect(preferences.useSingleQuotes).toBe(false);
       expect(preferences.useTrailingComma).toBe(false);
-      expect(preferences.maxLineLength).toBe(80);
     });
     it('should handle malformed import syntax gracefully', () => {
       const sourceText = `
@@ -214,11 +204,9 @@ describe('detectFormattingPreferences', () => {
 
       expect(preferences).toHaveProperty('useSingleQuotes');
       expect(preferences).toHaveProperty('useTrailingComma');
-      expect(preferences).toHaveProperty('maxLineLength');
 
       expect(typeof preferences.useSingleQuotes).toBe('boolean');
       expect(typeof preferences.useTrailingComma).toBe('boolean');
-      expect(typeof preferences.maxLineLength).toBe('number');
     });
   });
 });

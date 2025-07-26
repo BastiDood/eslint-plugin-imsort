@@ -11,7 +11,7 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 - **Zero configuration** - works out of the box with sensible defaults
 - **Auto-fixable** - automatically sorts imports when running `eslint --fix`
 
-## Configuration
+## Installation
 
 > [!CAUTION]
 > This plugin conflicts with the built-in [`sort-imports`] rule.
@@ -153,12 +153,3 @@ This ensures the generated import statements match your existing code style.
 ## Integration with Prettier
 
 This plugin is designed to work alongside Prettier. The plugin handles import ordering and grouping, while Prettier handles general code formatting. Make sure to run ESLint before Prettier in your formatting pipeline.
-
-## Requirements
-
-- Node.js 22.6.0+
-- ESLint 9.0.0+
-
-## License
-
-MIT

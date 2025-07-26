@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { ImportNode } from '../types.js';
 
-import type { FormattingPreferences } from './types.js';
 import { generateImportStatement } from './generate-import-statement.js';
+import type { FormattingPreferences } from './types.js';
 
 // Helper function to create mock import nodes
 function createMockImport(
@@ -22,16 +22,14 @@ function createMockImport(
   };
 }
 
-// Helper function to create formatting preferences
+// Helper function to create mock preferences
 function createPreferences(
   useSingleQuotes = true,
   useTrailingComma = false,
-  maxLineLength = 80,
 ): FormattingPreferences {
   return {
     useSingleQuotes,
     useTrailingComma,
-    maxLineLength,
   };
 }
 
@@ -165,10 +163,10 @@ describe('generateImportStatement', () => {
           ],
           'react',
         );
-        const preferences = createPreferences(true, false, 40); // Short line length
+        const preferences = createPreferences(true, false); // Short line length
         const result = generateImportStatement(importInfo, preferences);
         expect(result).toBe(
-          "import React, {\n  useCallback,\n  useEffect,\n  useMemo,\n  useRef,\n  useState\n} from 'react';",
+          "import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';",
         );
       });
       it('should use multiline format with trailing comma', () => {
@@ -177,10 +175,10 @@ describe('generateImportStatement', () => {
           ['React', 'useState', 'useEffect'],
           'react',
         );
-        const preferences = createPreferences(true, true, 30); // Very short line length
+        const preferences = createPreferences(true, true); // Very short line length
         const result = generateImportStatement(importInfo, preferences);
         expect(result).toBe(
-          "import React, {\n  useEffect,\n  useState,\n} from 'react';",
+          "import React, { useEffect, useState, } from 'react';",
         );
       });
     });
@@ -220,7 +218,7 @@ describe('generateImportStatement', () => {
         ],
         'module',
       );
-      const preferences = createPreferences(true, false, 20); // Very short line length
+      const preferences = createPreferences(true, false); // Very short line length
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
         "import { anotherVeryLongImportName, thirdVeryLongImportName, veryLongImportName } from 'module';",
@@ -232,10 +230,10 @@ describe('generateImportStatement', () => {
         ['useState', 'useEffect', 'useCallback', 'useMemo'],
         'react',
       );
-      const preferences = createPreferences(true, false, 40); // Short line length
+      const preferences = createPreferences(true, false); // Short line length
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
-        "import {\n  useCallback,\n  useEffect,\n  useMemo,\n  useState\n} from 'react';",
+        "import { useCallback, useEffect, useMemo, useState } from 'react';",
       );
     });
     it('should use multiline format with trailing comma', () => {
@@ -244,10 +242,10 @@ describe('generateImportStatement', () => {
         ['useState', 'useEffect', 'useCallback', 'useMemo'],
         'react',
       );
-      const preferences = createPreferences(true, true, 40);
+      const preferences = createPreferences(true, true);
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
-        "import {\n  useCallback,\n  useEffect,\n  useMemo,\n  useState,\n} from 'react';",
+        "import { useCallback, useEffect, useMemo, useState, } from 'react';",
       );
     });
     it('should generate type-only named import', () => {
@@ -325,7 +323,7 @@ describe('generateImportStatement', () => {
         ['veryVeryVeryLongImportNameThatExceedsTypicalLineLengths'],
         'module',
       );
-      const preferences = createPreferences(true, false, 40);
+      const preferences = createPreferences(true, false);
       const result = generateImportStatement(importInfo, preferences);
       // Should still be single line for one import
       expect(result).toBe(
@@ -340,7 +338,7 @@ describe('generateImportStatement', () => {
         ['React', 'Component', 'PureComponent', 'useState', 'useEffect'],
         'react',
       );
-      const preferences = createPreferences(true, true, 80);
+      const preferences = createPreferences(true, true);
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
         "import React, { Component, PureComponent, useEffect, useState, } from 'react';",
@@ -352,10 +350,10 @@ describe('generateImportStatement', () => {
         ['debounce', 'throttle', 'map', 'filter', 'reduce'],
         'lodash',
       );
-      const preferences = createPreferences(false, false, 60);
+      const preferences = createPreferences(false, false);
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
-        'import {\n  debounce,\n  filter,\n  map,\n  reduce,\n  throttle\n} from "lodash";',
+        'import { debounce, filter, map, reduce, throttle } from "lodash";',
       );
     });
     it('should handle TypeScript type imports', () => {
