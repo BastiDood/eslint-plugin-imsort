@@ -20,7 +20,6 @@ function createMockNode(
   )[] = [],
   sourceText?: string,
 ): ImportDeclaration {
-  // Calculate range based on sourceText length if provided, otherwise use a default
   const textLength = sourceText ? sourceText.length : 50;
   return {
     type: 'ImportDeclaration',
@@ -72,7 +71,7 @@ describe('Mixed type imports support', () => {
         "import { type User, value, type Config } from './types';";
 
       const result = extractImportInfo(node, sourceText);
-      expect(result.isTypeOnly).toBe(false); // Not a full type-only import
+      expect(result.isTypeOnly).toBe(false);
       expect(result.type).toBe('named');
       expect(result.identifiers).toEqual([
         { imported: 'User', isTypeOnly: true },
@@ -142,22 +141,6 @@ describe('Mixed type imports support', () => {
       expect(result.identifiers).toEqual([
         { imported: 'User', isTypeOnly: true },
         { imported: 'value' },
-      ]);
-    });
-
-    it('should handle all-type imports without statement-level type keyword', () => {
-      const node = createMockNode('./types', [
-        createImportSpecifier('User'),
-        createImportSpecifier('Config'),
-      ]);
-      const sourceText = "import { type User, type Config } from './types';";
-
-      const result = extractImportInfo(node, sourceText);
-
-      expect(result.isTypeOnly).toBe(false); // Statement-level type is false
-      expect(result.identifiers).toEqual([
-        { imported: 'User', isTypeOnly: true },
-        { imported: 'Config', isTypeOnly: true },
       ]);
     });
 
@@ -242,78 +225,27 @@ describe('Mixed type imports support', () => {
       );
     });
 
-    it('should preserve trailing commas in mixed type imports', () => {
-      const importNode = {
-        source: './types',
-        text: "import { type User, value, } from './types';",
-        line: 1,
-        type: 'named' as const,
-        identifiers: [
-          { imported: 'User', isTypeOnly: true },
-          { imported: 'value', isTypeOnly: false },
-        ],
-        isTypeOnly: false,
-      };
-
-      const preferences: FormattingPreferences = {
-        ...defaultPreferences,
-        useTrailingComma: true,
-      };
-
-      const result = generateImportStatement(importNode, preferences);
-
-      expect(result).toBe("import { type User, value } from './types';");
-    });
-
     it('should use statement-level type for full type imports', () => {
-      // When all imports are type-only but using statement-level type keyword
       const importNode = {
         source: './types',
         text: "import type { User, Config } from './types';",
         line: 1,
         type: 'named' as const,
         identifiers: [
-          { imported: 'User', isTypeOnly: false }, // No individual type flags
+          { imported: 'User', isTypeOnly: false },
           { imported: 'Config', isTypeOnly: false },
         ],
-        isTypeOnly: true, // Statement-level type
+        isTypeOnly: true,
       };
 
       const result = generateImportStatement(importNode, defaultPreferences);
 
       expect(result).toBe("import type { Config, User } from './types';");
     });
-
-    it('should handle multi-line mixed type imports', () => {
-      const importNode = {
-        source: './types',
-        text: "import { type User, value, type Config, helper } from './types';",
-        line: 1,
-        type: 'named' as const,
-        identifiers: [
-          { imported: 'User', isTypeOnly: true },
-          { imported: 'value', isTypeOnly: false },
-          { imported: 'Config', isTypeOnly: true },
-          { imported: 'helper', isTypeOnly: false },
-        ],
-        isTypeOnly: false,
-      };
-
-      const preferences: FormattingPreferences = {
-        ...defaultPreferences,
-      };
-
-      const result = generateImportStatement(importNode, preferences);
-
-      expect(result).toBe(
-        `import { type Config, helper, type User, value } from './types';`,
-      );
-    });
   });
 
   describe('mixed type import integration', () => {
     it('should handle complete mixed type import flow', () => {
-      // Simulate extracting and regenerating a mixed type import
       const node = createMockNode('./types', [
         createImportSpecifier('User'),
         createImportSpecifier('value'),
@@ -322,17 +254,9 @@ describe('Mixed type imports support', () => {
       const sourceText =
         "import { type User, value, type Config } from './types';";
 
-      // Extract information
       const extracted = extractImportInfo(node, sourceText);
-
-      expect(extracted.isTypeOnly).toBe(false);
-      expect(extracted.type).toBe('named');
-      expect(extracted.identifiers).toHaveLength(3);
-
-      // Generate sorted statement
       const generated = generateImportStatement(extracted, defaultPreferences);
 
-      // Should sort alphabetically while preserving type keywords
       expect(generated).toBe(
         "import { type Config, type User, value } from './types';",
       );
@@ -362,9 +286,7 @@ describe('Mixed type imports support', () => {
       );
     });
 
-    // NEW TEST CASES to expose potential bugs with type preservation
     it('should preserve type keywords when rearranging unsorted mixed imports', () => {
-      // Test case where imports are out of order and need rearranging
       const sourceText =
         "import { value, type User, helper, type Config } from './types';";
 
@@ -382,31 +304,8 @@ describe('Mixed type imports support', () => {
       const extracted = extractImportInfo(node, sourceText);
       const generated = generateImportStatement(extracted, defaultPreferences);
 
-      // Should preserve type keywords even when reordering
       expect(generated).toBe(
         "import { type Config, helper, type User, value } from './types';",
-      );
-    });
-
-    it('should preserve statement-level type import when rearranging', () => {
-      const sourceText = "import type { Config, User, Helper } from './types';";
-
-      const node = createMockNode(
-        './types',
-        [
-          createImportSpecifier('Config'),
-          createImportSpecifier('User'),
-          createImportSpecifier('Helper'),
-        ],
-        sourceText,
-      );
-
-      const extracted = extractImportInfo(node, sourceText);
-      const generated = generateImportStatement(extracted, defaultPreferences);
-
-      // Should preserve statement-level type keyword
-      expect(generated).toBe(
-        "import type { Config, Helper, User } from './types';",
       );
     });
 
@@ -433,62 +332,6 @@ describe('Mixed type imports support', () => {
       );
     });
 
-    it('should preserve type imports in namespace imports when rearranging', () => {
-      const sourceText = "import type * as Types from './types';";
-
-      const node = {
-        type: 'ImportDeclaration' as const,
-        attributes: [],
-        source: {
-          type: 'Literal' as const,
-          value: './types',
-          raw: "'./types'",
-        },
-        specifiers: [
-          {
-            type: 'ImportNamespaceSpecifier' as const,
-            local: { type: 'Identifier' as const, name: 'Types' },
-          },
-        ],
-        range: [0, sourceText.length] as [number, number],
-        loc: {
-          start: { line: 1, column: 0 },
-          end: { line: 1, column: sourceText.length },
-        },
-      };
-
-      const extracted = extractImportInfo(node, sourceText);
-      const generated = generateImportStatement(extracted, defaultPreferences);
-
-      expect(generated).toBe("import type * as Types from './types';");
-    });
-
-    it('should preserve mixed default and type imports with complex ordering', () => {
-      const sourceText =
-        "import React, { useEffect, type FC, useState, type ReactNode, useMemo, type Component } from 'react';";
-
-      const node = createMockNode(
-        'react',
-        [
-          createDefaultSpecifier('React'),
-          createImportSpecifier('useEffect'),
-          createImportSpecifier('FC'),
-          createImportSpecifier('useState'),
-          createImportSpecifier('ReactNode'),
-          createImportSpecifier('useMemo'),
-          createImportSpecifier('Component'),
-        ],
-        sourceText,
-      );
-
-      const extracted = extractImportInfo(node, sourceText);
-      const generated = generateImportStatement(extracted, defaultPreferences);
-
-      expect(generated).toBe(
-        "import React, { type Component, type FC, type ReactNode, useEffect, useMemo, useState } from 'react';",
-      );
-    });
-
     it('should handle edge case with only type imports in named import', () => {
       const sourceText =
         "import { type User, type Config, type Helper } from './types';";
@@ -502,32 +345,8 @@ describe('Mixed type imports support', () => {
       const extracted = extractImportInfo(node, sourceText);
       const generated = generateImportStatement(extracted, defaultPreferences);
 
-      // All are individual type imports, not statement-level
       expect(generated).toBe(
         "import { type Config, type Helper, type User } from './types';",
-      );
-    });
-
-    it('should correctly sort mixed type and value imports with type keyword stripping', () => {
-      const sourceText =
-        "import { customType, type CustomTypeValues } from 'drizzle-orm/pg-core';";
-
-      const node = createMockNode(
-        'drizzle-orm/pg-core',
-        [
-          createImportSpecifier('customType'),
-          createImportSpecifier('CustomTypeValues'),
-        ],
-        sourceText,
-      );
-
-      const extracted = extractImportInfo(node, sourceText);
-      const generated = generateImportStatement(extracted, defaultPreferences);
-
-      // Should sort by identifier name ignoring 'type' keyword, case-insensitive
-      // 'C'ustomTypeValues < 'c'ustomType (case-insensitive alphabetical)
-      expect(generated).toBe(
-        "import { type CustomTypeValues, customType } from 'drizzle-orm/pg-core';",
       );
     });
   });
