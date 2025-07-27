@@ -212,6 +212,209 @@ import { helper } from './helper';`,
       });
     });
 
+    it('should group @namespace/package with regular bare imports', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { angular } from '@angular/core';
+import { react } from 'react';
+import { aliased } from '@/aliased';`,
+        errors: 1,
+        output: `import { angular } from '@angular/core';
+import { react } from 'react';
+
+import { aliased } from '@/aliased';
+
+import { helper } from './helper';`,
+      });
+    });
+
+    it('should group $ aliased imports with other aliased imports', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { database } from '$lib/server/database';
+import { stores } from '$app/stores';
+import { aliased } from '@/aliased';
+import { react } from 'react';`,
+        errors: 1,
+        output: `import { react } from 'react';
+
+import { database } from '$lib/server/database';
+import { stores } from '$app/stores';
+
+import { aliased } from '@/aliased';
+
+import { helper } from './helper';`,
+      });
+    });
+
+    it('should handle complex intermingling of aliased and bare imports', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { database } from '$lib/server/database';
+import { angular } from '@angular/core';
+import { stores } from '$app/stores';
+import { aliased } from '@/aliased';
+import { react } from 'react';
+import { utils } from '@/utils';
+import { express } from 'express';
+import { config } from '~/config';
+import { lodash } from 'lodash';`,
+        errors: 1,
+        output: `import { angular } from '@angular/core';
+import { express } from 'express';
+import { lodash } from 'lodash';
+import { react } from 'react';
+
+import { database } from '$lib/server/database';
+import { stores } from '$app/stores';
+
+import { aliased } from '@/aliased';
+import { config } from '~/config';
+import { utils } from '@/utils';
+
+import { helper } from './helper';`,
+      });
+    });
+
+    it('should handle mixed aliased imports with different prefixes', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { database } from '$lib/server/database';
+import { stores } from '$app/stores';
+import { env } from '$env/dynamic/public';
+import { aliased } from '@/aliased';
+import { utils } from '@/utils';
+import { config } from '~/config';
+import { shared } from '~shared/types';
+import { react } from 'react';
+import { angular } from '@angular/core';`,
+        errors: 1,
+        output: `import { angular } from '@angular/core';
+import { react } from 'react';
+
+import { database } from '$lib/server/database';
+import { env } from '$env/dynamic/public';
+import { shared } from '~shared/types';
+import { stores } from '$app/stores';
+
+import { aliased } from '@/aliased';
+import { config } from '~/config';
+import { utils } from '@/utils';
+
+import { helper } from './helper';`,
+      });
+    });
+
+    it('should handle complex sorting within aliased import groups', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { zebra } from '$lib/zebra';
+import { alpha } from '@/alpha';
+import { beta } from '~/beta';
+import { gamma } from '$app/gamma';
+import { delta } from '@/delta';
+import { epsilon } from '~/epsilon';
+import { zeta } from '$lib/zeta';
+import { react } from 'react';
+import { angular } from '@angular/core';`,
+        errors: 1,
+        output: `import { angular } from '@angular/core';
+import { react } from 'react';
+
+import { gamma } from '$app/gamma';
+import { zebra } from '$lib/zebra';
+import { zeta } from '$lib/zeta';
+
+import { alpha } from '@/alpha';
+import { beta } from '~/beta';
+import { delta } from '@/delta';
+import { epsilon } from '~/epsilon';
+
+import { helper } from './helper';`,
+      });
+    });
+
+    it('should handle deeply nested aliased imports with bare imports', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { deep } from '$lib/deep/nested/path';
+import { shallow } from '@/shallow/path';
+import { react } from 'react';
+import { deeper } from '$lib/deeper/nested/path';
+import { shallowest } from '@/shallowest';
+import { express } from 'express';
+import { deepest } from '$lib/deepest/nested/path';
+import { angular } from '@angular/core';`,
+        errors: 1,
+        output: `import { angular } from '@angular/core';
+import { express } from 'express';
+import { react } from 'react';
+
+import { deep } from '$lib/deep/nested/path';
+import { deeper } from '$lib/deeper/nested/path';
+import { deepest } from '$lib/deepest/nested/path';
+
+import { shallow } from '@/shallow/path';
+import { shallowest } from '@/shallowest';
+
+import { helper } from './helper';`,
+      });
+    });
+
+    it('should handle comprehensive real-world scenario with all import types', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import { deep } from '$lib/deep/nested/path';
+import { shallow } from '@/shallow/path';
+import { react } from 'react';
+import { deeper } from '$lib/deeper/nested/path';
+import { shallowest } from '@/shallowest';
+import { express } from 'express';
+import { deepest } from '$lib/deepest/nested/path';
+import { angular } from '@angular/core';
+import { database } from '$lib/server/database';
+import { stores } from '$app/stores';
+import { env } from '$env/dynamic/public';
+import { aliased } from '@/aliased';
+import { utils } from '@/utils';
+import { config } from '~/config';
+import { shared } from '~shared/types';
+import { lodash } from 'lodash';
+import { readFile } from 'node:fs/promises';
+import { types } from './types';
+import { parent } from '../parent';
+import { grandparent } from '../../grandparent';`,
+        errors: 1,
+        output: `import { readFile } from 'node:fs/promises';
+
+import { angular } from '@angular/core';
+import { express } from 'express';
+import { lodash } from 'lodash';
+import { react } from 'react';
+
+import { database } from '$lib/server/database';
+import { deep } from '$lib/deep/nested/path';
+import { deeper } from '$lib/deeper/nested/path';
+import { deepest } from '$lib/deepest/nested/path';
+import { env } from '$env/dynamic/public';
+import { shared } from '~shared/types';
+import { stores } from '$app/stores';
+
+import { aliased } from '@/aliased';
+import { config } from '~/config';
+import { shallow } from '@/shallow/path';
+import { shallowest } from '@/shallowest';
+import { utils } from '@/utils';
+
+import { grandparent } from '../../grandparent';
+
+import { parent } from '../parent';
+
+import { helper } from './helper';
+import { types } from './types';`,
+      });
+    });
+
     it('should handle multiple side-effect imports', () => {
       invalid({
         code: `import { helper } from './helper';

@@ -67,15 +67,23 @@ The plugin organizes imports into the following groups, in order:
    import type { Config } from '@types/config';
    ```
 
-5. **Custom-aliased imports** (`@/*`, `~/*`, `~shared/*`, etc.)
+5. **Custom-aliased imports with $ and ~ prefixes** (`$lib/*`, `$app/*`, `~/*`, `~shared/*`, etc.)
+
+   ```js
+   import config from '~/config';
+   import shared from '~shared/types';
+   import { database } from '$lib/server/database';
+   import { stores } from '$app/stores';
+   ```
+
+6. **Custom-aliased imports with @/ prefix** (`@/utils`, `@/lib/*`, etc.)
 
    ```js
    import { utils } from '@/utils';
-   import config from '~/config';
-   import shared from '~shared/types';
+   import { components } from '@/components/Button';
    ```
 
-6. **Relative imports** (`../`, `../../`, etc.) - grouped by decreasing depth
+7. **Relative imports** (`../`, `../../`, etc.) - grouped by decreasing depth
 
    ```js
    import { deep } from '../../../utils/deep';
@@ -106,6 +114,7 @@ import { utils } from '@/utils';
 import { deep } from '../../deep';
 import express from 'express';
 import type { User } from './types';
+import { database } from '$lib/server/database';
 ```
 
 ### After
@@ -115,6 +124,8 @@ import fs from 'node:fs';
 
 import express from 'express';
 import React from 'react';
+
+import { database } from '$lib/server/database';
 
 import { utils } from '@/utils';
 

@@ -17,36 +17,24 @@ export function sortImportsInGroup(imports: ImportNode[]) {
     // Then sort by type-only vs value imports (type-only comes first)
     if (a.isTypeOnly !== b.isTypeOnly) return a.isTypeOnly ? -1 : 1;
 
-    // For type-only imports, sort by first identifier first, then by source
-    if (a.isTypeOnly && b.isTypeOnly) {
-      const aFirstId = a.identifiers[0]?.imported ?? a.source;
-      const bFirstId = b.identifiers[0]?.imported ?? b.source;
-      if (typeof aFirstId !== 'undefined' && typeof bFirstId !== 'undefined') {
-        const identifierComparison = aFirstId.localeCompare(bFirstId, void 0, {
-          numeric: true,
-          sensitivity: 'base',
-        });
-        if (identifierComparison !== 0) return identifierComparison;
-      }
+    // Sort by first identifier (alphabetically)
+    const aFirstId = a.identifiers[0]?.imported ?? a.source;
+    const bFirstId = b.identifiers[0]?.imported ?? b.source;
+    if (typeof aFirstId !== 'undefined' && typeof bFirstId !== 'undefined') {
+      const identifierComparison = aFirstId.localeCompare(bFirstId, void 0, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+      if (identifierComparison !== 0) return identifierComparison;
     }
 
-    // Then sort by source for different sources within the same type
+    // If first identifier is the same, fall back to source path
     const sourceComparison = a.source.localeCompare(b.source, void 0, {
       numeric: true,
       sensitivity: 'base',
     });
     if (sourceComparison !== 0) return sourceComparison;
 
-    // Finally sort by first identifier within the same source and type
-    const aFirstId = a.identifiers[0]?.imported ?? a.source;
-    const bFirstId = b.identifiers[0]?.imported ?? b.source;
-
-    if (typeof aFirstId === 'undefined' || typeof bFirstId === 'undefined')
-      return 0;
-
-    return aFirstId.localeCompare(bFirstId, void 0, {
-      numeric: true,
-      sensitivity: 'base',
-    });
+    return 0;
   });
 }

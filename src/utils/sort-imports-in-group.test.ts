@@ -197,8 +197,8 @@ describe('sortImportsInGroup', () => {
         { type: 'side-effect', firstId: 'react-dom/styles.css' },
         { type: 'namespace', firstId: 'ReactDOM' },
         { type: 'default', firstId: 'React' },
-        { type: 'named', firstId: 'useState' },
         { type: 'named', firstId: 'createRoot' },
+        { type: 'named', firstId: 'useState' },
       ]);
     });
     it('should maintain stability for equal items', () => {

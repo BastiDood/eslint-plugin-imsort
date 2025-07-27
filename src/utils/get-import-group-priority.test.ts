@@ -84,59 +84,133 @@ describe('getImportGroupPriority', () => {
       expect(getImportGroupPriority('@sveltejs/kit')).toBe(3);
       expect(getImportGroupPriority('@vue/compiler-sfc')).toBe(3);
     });
+    it('should handle @namespace/package as bare imports (not aliased)', () => {
+      expect(getImportGroupPriority('@angular/core')).toBe(3);
+      expect(getImportGroupPriority('@nestjs/common')).toBe(3);
+      expect(getImportGroupPriority('@mui/material')).toBe(3);
+      expect(getImportGroupPriority('@babel/core')).toBe(3);
+    });
     it('should handle packages with subdirectories', () => {
       expect(getImportGroupPriority('lodash/map')).toBe(3);
       expect(getImportGroupPriority('rxjs/operators')).toBe(3);
     });
   });
-  describe('custom-aliased imports (priority 4)', () => {
-    it('should handle @ aliased imports', () => {
-      expect(getImportGroupPriority('@/lib/utils')).toBe(4);
-      expect(getImportGroupPriority('@/components/Button')).toBe(4);
-      expect(getImportGroupPriority('@/types')).toBe(4);
+  describe('custom-aliased imports with $ prefixes (priority 4)', () => {
+    it('should handle $ aliased imports (SvelteKit convention)', () => {
+      expect(getImportGroupPriority('$lib/utils')).toBe(4);
+      expect(getImportGroupPriority('$app/stores')).toBe(4);
+      expect(getImportGroupPriority('$env/dynamic/public')).toBe(4);
+      expect(getImportGroupPriority('$lib/server/database')).toBe(4);
     });
-    it('should handle ~ aliased imports', () => {
-      expect(getImportGroupPriority('~/utils')).toBe(4);
-      expect(getImportGroupPriority('~shared/types')).toBe(4);
-      expect(getImportGroupPriority('~/components/Header')).toBe(4);
+    it('should distinguish $ aliased imports from regular bare imports', () => {
+      expect(getImportGroupPriority('$lib/utils')).toBe(4); // aliased
+      expect(getImportGroupPriority('$app/stores')).toBe(4); // aliased
+      expect(getImportGroupPriority('lodash')).toBe(3); // bare import
+      expect(getImportGroupPriority('react')).toBe(3); // bare import
+    });
+    it('should handle deeply nested $ aliased imports', () => {
+      expect(getImportGroupPriority('$lib/deep/nested/path')).toBe(4);
+      expect(getImportGroupPriority('$lib/deeper/nested/path')).toBe(4);
+      expect(getImportGroupPriority('$lib/deepest/nested/path')).toBe(4);
     });
   });
-  describe('parent-relative imports (priority 50-depth)', () => {
+
+  describe('custom-aliased imports with @/ and ~ prefixes (priority 5)', () => {
+    it('should handle @ aliased imports', () => {
+      expect(getImportGroupPriority('@/lib/utils')).toBe(5);
+      expect(getImportGroupPriority('@/components/Button')).toBe(5);
+      expect(getImportGroupPriority('@/types')).toBe(5);
+    });
+    it('should handle ~ aliased imports', () => {
+      expect(getImportGroupPriority('~/utils')).toBe(5);
+      expect(getImportGroupPriority('~shared/types')).toBe(4);
+      expect(getImportGroupPriority('~/components/Header')).toBe(5);
+    });
+    it('should distinguish @/ and ~ aliased imports from @namespace/package imports', () => {
+      expect(getImportGroupPriority('@/utils')).toBe(5); // aliased
+      expect(getImportGroupPriority('~/config')).toBe(5); // aliased
+      expect(getImportGroupPriority('@angular/core')).toBe(3); // bare import
+      expect(getImportGroupPriority('@/components/Button')).toBe(5); // aliased
+      expect(getImportGroupPriority('@nestjs/common')).toBe(3); // bare import
+    });
+    it('should handle deeply nested @ and ~ aliased imports', () => {
+      expect(getImportGroupPriority('@/shallow/path')).toBe(5);
+      expect(getImportGroupPriority('@/shallowest')).toBe(5);
+      expect(getImportGroupPriority('@/deep/nested/path')).toBe(5);
+      expect(getImportGroupPriority('~shared/deep/nested/path')).toBe(4);
+    });
+  });
+
+  describe('complex intermingling of different aliased import types', () => {
+    it('should handle different aliased import priorities', () => {
+      // $ aliased imports (priority 4)
+      expect(getImportGroupPriority('$lib/server/database')).toBe(4);
+      expect(getImportGroupPriority('$app/stores')).toBe(4);
+      expect(getImportGroupPriority('$env/dynamic/public')).toBe(4);
+
+      // @ aliased imports (priority 5)
+      expect(getImportGroupPriority('@/utils')).toBe(5);
+      expect(getImportGroupPriority('@/lib/utils')).toBe(5);
+      expect(getImportGroupPriority('@/components/Button')).toBe(5);
+      // ~ aliased imports (priority 4 for ~prefix/, priority 5 for ~/prefix)
+      expect(getImportGroupPriority('~/config')).toBe(5);
+      expect(getImportGroupPriority('~shared/types')).toBe(4);
+    });
+    it('should handle complex intermingling of bare imports with aliased imports', () => {
+      // Bare imports (priority 3)
+      expect(getImportGroupPriority('react')).toBe(3);
+      expect(getImportGroupPriority('express')).toBe(3);
+      expect(getImportGroupPriority('lodash')).toBe(3);
+      expect(getImportGroupPriority('@angular/core')).toBe(3);
+      expect(getImportGroupPriority('@nestjs/common')).toBe(3);
+
+      // $ aliased imports (priority 4)
+      expect(getImportGroupPriority('$lib/server/database')).toBe(4);
+      expect(getImportGroupPriority('$app/stores')).toBe(4);
+
+      // @ aliased imports (priority 5)
+      expect(getImportGroupPriority('@/utils')).toBe(5);
+      expect(getImportGroupPriority('@/lib/utils')).toBe(5);
+      // ~ aliased imports (priority 4 for ~prefix/, priority 5 for ~/prefix)
+      expect(getImportGroupPriority('~/config')).toBe(5);
+    });
+  });
+  describe('parent-relative imports (priority 60-depth)', () => {
     it('should handle single parent directory', () => {
-      expect(getImportGroupPriority('../utils')).toBe(49); // 50 - 1
-      expect(getImportGroupPriority('../components/Button')).toBe(49);
+      expect(getImportGroupPriority('../utils')).toBe(59); // 60 - 1
+      expect(getImportGroupPriority('../components/Button')).toBe(59);
     });
     it('should handle multiple parent directories with decreasing priority', () => {
-      expect(getImportGroupPriority('../../utils')).toBe(48); // 50 - 2
-      expect(getImportGroupPriority('../../../lib')).toBe(47); // 50 - 3
-      expect(getImportGroupPriority('../../../../shared')).toBe(46); // 50 - 4
+      expect(getImportGroupPriority('../../utils')).toBe(58); // 60 - 2
+      expect(getImportGroupPriority('../../../lib')).toBe(57); // 60 - 3
+      expect(getImportGroupPriority('../../../../shared')).toBe(56); // 60 - 4
     });
     it('should handle bare .. import', () => {
-      expect(getImportGroupPriority('..')).toBe(49);
+      expect(getImportGroupPriority('..')).toBe(59);
     });
     it('should calculate depth correctly for complex paths', () => {
-      expect(getImportGroupPriority('../../../../../../../deep')).toBe(43); // 50 - 7
+      expect(getImportGroupPriority('../../../../../../../deep')).toBe(53); // 60 - 7
     });
   });
   describe('relative imports', () => {
-    it('should handle current directory imports (priority 50)', () => {
-      expect(getImportGroupPriority('./utils')).toBe(50);
-      expect(getImportGroupPriority('./index')).toBe(50);
-      expect(getImportGroupPriority('./helper')).toBe(50);
+    it('should handle current directory imports (priority 60)', () => {
+      expect(getImportGroupPriority('./utils')).toBe(60);
+      expect(getImportGroupPriority('./index')).toBe(60);
+      expect(getImportGroupPriority('./helper')).toBe(60);
     });
 
     it('should handle descendant imports with increasing priority by depth', () => {
       // Depth 1: ./folder/file
-      expect(getImportGroupPriority('./lib/helpers')).toBe(51); // 50 + 1
-      expect(getImportGroupPriority('./components/Button')).toBe(51); // 50 + 1
-      expect(getImportGroupPriority('./helper/test')).toBe(51); // 50 + 1
+      expect(getImportGroupPriority('./lib/helpers')).toBe(61); // 60 + 1
+      expect(getImportGroupPriority('./components/Button')).toBe(61); // 60 + 1
+      expect(getImportGroupPriority('./helper/test')).toBe(61); // 60 + 1
 
       // Depth 2: ./folder/subfolder/file
-      expect(getImportGroupPriority('./components/ui/Button')).toBe(52); // 50 + 2
-      expect(getImportGroupPriority('./lib/utils/helpers')).toBe(52); // 50 + 2
+      expect(getImportGroupPriority('./components/ui/Button')).toBe(62); // 60 + 2
+      expect(getImportGroupPriority('./lib/utils/helpers')).toBe(62); // 60 + 2
 
       // Depth 3: ./folder/subfolder/subsubfolder/file
-      expect(getImportGroupPriority('./components/ui/forms/Input')).toBe(53); // 50 + 3
+      expect(getImportGroupPriority('./components/ui/forms/Input')).toBe(63); // 60 + 3
     });
   });
   describe('edge cases', () => {
