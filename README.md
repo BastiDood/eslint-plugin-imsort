@@ -103,20 +103,29 @@ The plugin organizes imports into the following groups, in order:
 Each group is separated by a blank line, and imports within each group are sorted by:
 
 1. **Import type priority**: side-effect → namespace → default → named
-2. **First imported identifier** alphabetically
+2. **First imported identifier** alphabetically (case-insensitive)
 3. **Source path** as fallback when identifiers are the same
 
 > [!NOTE]
 > Type-only imports (`import type`) are treated the same as value imports for sorting purposes.
 
-> [!NOTE]
-> **On `~` prefix distinction:**
->
-> - `~prefix/` (like `~shared/`) is treated as a custom alias (group 5)
-> - `~/prefix` (like `~/config`) is treated as a root alias (group 6)
+### Type keyword handling
 
-**Sorting within groups:**
-Within the same import type, imports are sorted by the first imported identifier alphabetically. For example, `import { createRoot } from 'react-dom/client'` comes before `import { useState } from 'react'` because `createRoot` < `useState` alphabetically.
+The `type` keyword in individual import specifiers (e.g., `{ type User }`) is ignored for sorting purposes but preserved in the output. For example, `{ type CustomValue }` and `{ customType }` are sorted based on `CustomValue` vs `customType` respectively.
+
+### On `~` prefix distinction
+
+- `~prefix/` (like `~shared/`) is treated as a custom alias (group 5)
+- `~/prefix` (like `~/config`) is treated as a root alias (group 6)
+
+### Sorting within groups
+
+Within the same import type, imports are sorted by the first imported identifier alphabetically (case-insensitive). For example, `import { createRoot } from 'react-dom/client'` comes before `import { useState } from 'react'` because `createRoot` < `useState` alphabetically.
+
+### Case-insensitive sorting examples
+
+- `import { Extract } from './module'` comes before `import { extractImportInfo } from './module'` because `E` < `e` in case-insensitive sorting
+- `import { type CustomValue } from './module'` comes after `import { customType } from './module'` because `CustomValue` (stripped of `type`) comes after `customType` alphabetically
 
 ## Example
 
@@ -139,18 +148,51 @@ import { database } from '$lib/server/database';
 ```js
 import fs from 'node:fs';
 
-import React from 'react';
 import express from 'express';
+import React from 'react';
 
 import { database } from '$lib/server/database';
 
 import { utils } from '@/utils';
 
 import { deep } from '../../deep';
+
 import { config } from '../config';
 
 import { helper } from './helper';
 import type { User } from './types';
+```
+
+### Case-insensitive sorting example
+
+```js
+// Before
+import { FormattingPreferences } from './preferences';
+import { extractImportInfo } from './utils';
+import { Extract } from './extract';
+import { formattingPreferences } from './preferences';
+
+// After
+import { Extract } from './extract';
+import { extractImportInfo } from './utils';
+import { FormattingPreferences } from './preferences';
+import { formattingPreferences } from './preferences';
+```
+
+### Type keyword handling example
+
+```js
+// Before
+import { customType } from './types';
+import { type CustomValue } from './types';
+import { TypeHelper } from './helpers';
+import { typeHelper } from './helpers';
+
+// After
+import { customType } from './types';
+import { type CustomValue } from './types';
+import { TypeHelper } from './helpers';
+import { typeHelper } from './helpers';
 ```
 
 ## Rule Options
