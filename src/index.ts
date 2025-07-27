@@ -9,4 +9,11 @@ export default {
     namespace: '@bastidood/imsort',
   },
   rules: { 'sort-imports': sortImports },
+  configs: {
+    all: {
+      rules: {
+        '@bastidood/imsort/sort-imports': 'error',
+      },
+    },
+  },
 } satisfies ESLint.Plugin;

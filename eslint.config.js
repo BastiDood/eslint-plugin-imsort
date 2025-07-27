@@ -13,6 +13,7 @@ export default defineConfig(
       js.configs.recommended,
       ...ts.configs.recommended,
       ...ts.configs.stylistic,
+      imsort.configs.all,
       prettier,
     ],
     plugins: { '@bastidood/imsort': imsort },

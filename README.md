@@ -22,26 +22,49 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 
 Add the plugin to your `eslint.config.js`:
 
+**Option 1: Use the `all` config (recommended)**
+
 ```js
 import imsort from '@bastidood/eslint-plugin-imsort';
 
 export default [
   {
     files: ['**/*.{j,t}s{,x}'],
+    ...imsort.configs.all,
+  },
+];
+```
+
+**Option 2: Manual configuration**
+
+```js
+import imsort from '@bastidood/eslint-plugin-imsort';
+
+export default [
+  {
+    files: ['**/*.{j,t}s{,x}'],
+    extends: [imsort.configs.all],
     plugins: { '@bastidood/imsort': imsort },
-    rules: { '@bastidood/imsort/sort-imports': 'error' },
   },
 ];
 ```
 
 ### Legacy ESLint Config
 
-Add to your `.eslintrc.json`:
+**Option 1: Use the `all` config (recommended)**
+
+```json
+{
+  "extends": ["plugin:@bastidood/imsort/all"]
+}
+```
+
+**Option 2: Manual configuration**
 
 ```json
 {
   "plugins": ["@bastidood/imsort"],
-  "rules": { "imsort/sort-imports": "error" }
+  "rules": { "@bastidood/imsort/sort-imports": "error" }
 }
 ```
 
