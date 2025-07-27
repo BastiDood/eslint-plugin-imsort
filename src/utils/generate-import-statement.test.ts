@@ -140,15 +140,15 @@ describe('generateImportStatement', () => {
           "import React, { useEffect, useState } from 'react';",
         );
       });
-      it('should add trailing comma when preferred', () => {
+      it('should not add trailing comma', () => {
         const importInfo = createMockImport(
           'default',
           ['React', 'useState'],
           'react',
         );
-        const preferences = createPreferences(true, true);
+        const preferences = createPreferences(true, false);
         const result = generateImportStatement(importInfo, preferences);
-        expect(result).toBe("import React, { useState, } from 'react';");
+        expect(result).toBe("import React, { useState } from 'react';");
       });
       it('should use multiline format for long imports', () => {
         const importInfo = createMockImport(
@@ -169,16 +169,16 @@ describe('generateImportStatement', () => {
           "import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';",
         );
       });
-      it('should use multiline format with trailing comma', () => {
+      it('should use single line format without trailing comma', () => {
         const importInfo = createMockImport(
           'default',
           ['React', 'useState', 'useEffect'],
           'react',
         );
-        const preferences = createPreferences(true, true); // Very short line length
+        const preferences = createPreferences(true, false);
         const result = generateImportStatement(importInfo, preferences);
         expect(result).toBe(
-          "import React, { useEffect, useState, } from 'react';",
+          "import React, { useEffect, useState } from 'react';",
         );
       });
     });
@@ -202,11 +202,11 @@ describe('generateImportStatement', () => {
         "import { useCallback, useEffect, useState } from 'react';",
       );
     });
-    it('should add trailing comma when preferred', () => {
+    it('should not add trailing comma', () => {
       const importInfo = createMockImport('named', ['useState'], 'react');
-      const preferences = createPreferences(true, true);
+      const preferences = createPreferences(true, false);
       const result = generateImportStatement(importInfo, preferences);
-      expect(result).toBe("import { useState, } from 'react';");
+      expect(result).toBe("import { useState } from 'react';");
     });
     it('should use single line for 3 or fewer imports regardless of length', () => {
       const importInfo = createMockImport(
@@ -236,16 +236,16 @@ describe('generateImportStatement', () => {
         "import { useCallback, useEffect, useMemo, useState } from 'react';",
       );
     });
-    it('should use multiline format with trailing comma', () => {
+    it('should use single line format without trailing comma', () => {
       const importInfo = createMockImport(
         'named',
         ['useState', 'useEffect', 'useCallback', 'useMemo'],
         'react',
       );
-      const preferences = createPreferences(true, true);
+      const preferences = createPreferences(true, false);
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
-        "import { useCallback, useEffect, useMemo, useState, } from 'react';",
+        "import { useCallback, useEffect, useMemo, useState } from 'react';",
       );
     });
     it('should generate type-only named import', () => {
@@ -338,10 +338,10 @@ describe('generateImportStatement', () => {
         ['React', 'Component', 'PureComponent', 'useState', 'useEffect'],
         'react',
       );
-      const preferences = createPreferences(true, true);
+      const preferences = createPreferences(true, false);
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
-        "import React, { Component, PureComponent, useEffect, useState, } from 'react';",
+        "import React, { Component, PureComponent, useEffect, useState } from 'react';",
       );
     });
     it('should handle utility library imports', () => {
@@ -363,10 +363,10 @@ describe('generateImportStatement', () => {
         'react',
         true,
       );
-      const preferences = createPreferences(true, true);
+      const preferences = createPreferences(true, false);
       const result = generateImportStatement(importInfo, preferences);
       expect(result).toBe(
-        "import type { FC, PropsWithChildren, ReactNode, } from 'react';",
+        "import type { FC, PropsWithChildren, ReactNode } from 'react';",
       );
     });
   });

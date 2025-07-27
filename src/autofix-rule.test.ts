@@ -194,7 +194,7 @@ import {c} from 'react';`,
         output: `import { c } from 'react';
 
 import { a } from './a';
-import { b } from './b';`,
+import { b } from "./b";`,
       });
     });
 
@@ -551,7 +551,7 @@ import { helper } from './helper';`,
       invalid({
         code: `import { useState, useCallback, } from 'react';`,
         errors: 1,
-        output: `import { useCallback, useState, } from 'react';`,
+        output: `import { useCallback, useState } from 'react';`,
       });
     });
 
@@ -562,7 +562,7 @@ import { readFile, writeFile } from 'node:fs/promises';`,
         errors: 1,
         output: `import { readFile, writeFile } from 'node:fs/promises';
 
-import { useCallback, useState, } from 'react';`,
+import { useCallback, useState } from 'react';`,
       });
     });
 
@@ -581,7 +581,7 @@ import { helper } from './helper';`,
       invalid({
         code: `import React, { useState, useCallback, } from 'react';`,
         errors: 1,
-        output: `import React, { useCallback, useState, } from 'react';`,
+        output: `import React, { useCallback, useState } from 'react';`,
       });
     });
   });
@@ -664,14 +664,14 @@ import { rule } from './child';`,
       });
     });
 
-    it('should maintain quote style consistency', () => {
+    it('should preserve original quote styles', () => {
       invalid({
         code: `import { useState, useCallback } from "react";
-import { helper } from "./helper";`,
+import { helper } from './helper';`,
         errors: 1,
         output: `import { useCallback, useState } from "react";
 
-import { helper } from "./helper";`,
+import { helper } from './helper';`,
       });
     });
   });

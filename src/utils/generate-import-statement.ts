@@ -94,17 +94,17 @@ export function generateImportStatement(
       const namedImportsStr = sortedNamed
         .map(id => formatIdentifier(id, suppressIndividualTypes))
         .join(', ');
-      return `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
+      return `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr} } from ${quote}${source}${quote};`;
     }
 
     case 'named': {
       const sortedIds = [...identifiers].sort(sortIdentifiers);
 
-      // Format as single line
+      // Format as single line for consistency
       const namedImportsStr = sortedIds
         .map(id => formatIdentifier(id, suppressIndividualTypes))
         .join(', ');
-      return `import ${statementTypePrefix}{ ${namedImportsStr}${preferences.useTrailingComma ? ',' : ''} } from ${quote}${source}${quote};`;
+      return `import ${statementTypePrefix}{ ${namedImportsStr} } from ${quote}${source}${quote};`;
     }
 
     default:

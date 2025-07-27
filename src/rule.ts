@@ -195,9 +195,6 @@ export const sortImports: Rule.RuleModule = {
             message:
               'Imports should be sorted and grouped according to the specified rules',
             fix(fixer) {
-              // Detect formatting preferences from the source text
-              const globalPreferences = detectFormattingPreferences(text);
-
               // Generate sorted import statements with proper grouping
               const sortedStatements: string[] = [];
 
@@ -210,16 +207,11 @@ export const sortImports: Rule.RuleModule = {
 
                 // Process imports within this group
                 for (const importInfo of groupImports) {
-                  // Detect formatting preferences for this specific import
-                  const importPreferences = detectFormattingPreferences(
+                  // Preserve the original formatting of each import
+                  const preferences = detectFormattingPreferences(
                     text,
                     importInfo.text,
                   );
-                  // Use global quote preference but import-specific trailing comma preference
-                  const preferences = {
-                    ...globalPreferences,
-                    useTrailingComma: importPreferences.useTrailingComma,
-                  };
 
                   sortedStatements.push(
                     generateImportStatement(importInfo, preferences),

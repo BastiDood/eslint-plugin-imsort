@@ -262,7 +262,7 @@ describe('Mixed type imports support', () => {
 
       const result = generateImportStatement(importNode, preferences);
 
-      expect(result).toBe("import { type User, value, } from './types';");
+      expect(result).toBe("import { type User, value } from './types';");
     });
 
     it('should use statement-level type for full type imports', () => {
