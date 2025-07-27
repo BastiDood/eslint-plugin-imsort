@@ -1,6 +1,6 @@
+import * as tsParser from '@typescript-eslint/parser';
 import { createRuleTester } from 'eslint-vitest-rule-tester';
 import { describe, it } from 'vitest';
-import * as tsParser from '@typescript-eslint/parser';
 
 import { sortImports } from './rule.js';
 

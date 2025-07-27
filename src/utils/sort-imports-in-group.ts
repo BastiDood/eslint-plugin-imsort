@@ -14,6 +14,9 @@ export function sortImportsInGroup(imports: ImportNode[]) {
     const typeDiff = aTypeOrder - bTypeOrder;
     if (typeDiff !== 0) return typeDiff;
 
+    // Then sort by type-only vs value imports (type-only comes first)
+    if (a.isTypeOnly !== b.isTypeOnly) return a.isTypeOnly ? -1 : 1;
+
     // Then sort by source for different sources within the same type
     const sourceComparison = a.source.localeCompare(b.source, void 0, {
       numeric: true,

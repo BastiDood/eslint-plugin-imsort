@@ -5,6 +5,7 @@ import type {
   ImportNamespaceSpecifier,
   ImportSpecifier,
 } from 'estree';
+
 import { describe, expect, it } from 'vitest';
 
 import { extractImportInfo } from './extract-import-info.js';

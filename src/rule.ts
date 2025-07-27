@@ -1,5 +1,6 @@
 import type { Rule } from 'eslint';
 import type { ImportDeclaration, Program } from 'estree';
+
 import { enumerate } from 'itertools';
 
 import type { ImportNode } from './types.ts';
@@ -49,6 +50,28 @@ function areIdentifiersSorted(importInfo: ImportNode): boolean {
   return true;
 }
 
+/** Generate group key for an import */
+function getGroupKey(importInfo: ImportNode) {
+  return getImportGroupPriority(importInfo.source);
+}
+
+/** Check if there are sufficient blank lines between two import nodes */
+function hasBlankLineBetween(
+  prevNode: ImportDeclaration,
+  currentNode: ImportDeclaration,
+  text: string,
+): boolean {
+  if (
+    typeof prevNode.range === 'undefined' ||
+    typeof currentNode.range === 'undefined'
+  )
+    return false;
+
+  const textBetween = text.slice(prevNode.range[1], currentNode.range[0]);
+  const newlineCount = (textBetween.match(/\n/gu) || []).length;
+  return newlineCount >= 2;
+}
+
 export const sortImports: Rule.RuleModule = {
   meta: {
     type: 'layout',
@@ -64,132 +87,103 @@ export const sortImports: Rule.RuleModule = {
     const text = context.sourceCode.getText();
     return {
       Program(node: Program) {
-        const importNodes = node.body.filter(
-          (statement): statement is ImportDeclaration =>
-            statement.type === 'ImportDeclaration',
-        );
-
-        // Collect all import declarations
-        const imports: ImportNode[] = [];
+        // Collect import declarations and their parsed info in a single pass
+        const importData: {
+          node: ImportDeclaration;
+          info: ImportNode;
+        }[] = [];
 
         for (const statement of node.body)
           if (statement.type === 'ImportDeclaration') {
             const importInfo = extractImportInfo(statement, text);
-            imports.push(importInfo);
+            importData.push({ node: statement, info: importInfo });
           }
 
-        if (imports.length === 0) return; // No imports to sort
+        if (importData.length === 0) return; // No imports to sort
+
+        const imports = importData.map(({ info }) => info);
+        const importNodes = importData.map(({ node }) => node);
 
         // Group imports by priority AND type-only
-        const groups = new Map<string, ImportNode[]>();
+        const groups = new Map<number, ImportNode[]>();
 
         for (const importInfo of imports) {
-          const priority = getImportGroupPriority(importInfo.source);
-          const typeKey = importInfo.isTypeOnly ? 'type' : 'value';
-          const groupKey = `${priority}|${typeKey}`;
+          const groupKey = getGroupKey(importInfo);
           const existingGroup = groups.get(groupKey);
           if (typeof existingGroup === 'undefined')
             groups.set(groupKey, [importInfo]);
           else existingGroup.push(importInfo);
         }
 
-        // Sort groups by priority and type, then sort within each group
+        // Sort groups by priority, then sort within each group
         const sortedGroups = Array.from(groups.entries())
           .sort(([a], [b]) => {
-            const [aPriority, aType] = a.split('|');
-            const [bPriority, bType] = b.split('|');
-            const priorityDiff = Number(aPriority) - Number(bPriority);
-            if (priorityDiff !== 0) return priorityDiff;
-            // type-only comes before value
-            if (aType === bType) return 0;
-            return aType === 'type' ? -1 : 1;
+            const aPriority = Number(a);
+            const bPriority = Number(b);
+            return aPriority - bPriority;
           })
           .map(([_, groupImports]) => sortImportsInGroup(groupImports));
 
         // Generate the expected import order
         const expectedImports = sortedGroups.flat();
 
-        // Check if current order matches expected order OR if any identifiers are unsorted
+        // Single validation pass that checks all conditions
         let needsReordering = false;
 
-        // First check if any individual import has unsorted identifiers
-        for (const importInfo of imports)
+        // Check identifiers sorting, blank lines, and import order in one loop
+        for (let i = 0; i < imports.length; i++) {
+          const importInfo = imports[i];
+          const expectedImport = expectedImports[i];
+
+          if (typeof importInfo === 'undefined') continue;
+
+          // Check if identifiers are sorted
           if (!areIdentifiersSorted(importInfo)) {
             needsReordering = true;
             break;
           }
 
-        // Check if blank lines between groups are missing (check this first)
-        if (imports.length > 1) {
-          let currentGroupKey: string | null = null;
+          // Check blank lines between groups (skip first import)
+          if (i > 0) {
+            const prevNode = importNodes[i - 1];
+            const currentNode = importNodes[i];
+            const prevImportInfo = imports[i - 1];
 
-          for (let i = 0; i < imports.length; i++) {
-            const importInfo = imports[i];
-            if (typeof importInfo === 'undefined') continue;
-
-            const priority = getImportGroupPriority(importInfo.source);
-            const typeKey = importInfo.isTypeOnly ? 'type' : 'value';
-            const groupKey = `${priority}|${typeKey}`;
-
-            // Check if we need a blank line before this import
             if (
-              i > 0 &&
-              currentGroupKey !== null &&
-              currentGroupKey !== groupKey
+              typeof prevNode !== 'undefined' &&
+              typeof currentNode !== 'undefined' &&
+              typeof prevImportInfo !== 'undefined'
             ) {
-              // Get the end of the previous import and start of this import
-              const prevImportNode = importNodes[i - 1];
-              const currentImportNode = importNodes[i];
+              const currentGroupKey = getGroupKey(importInfo);
+              const prevGroupKey = getGroupKey(prevImportInfo);
 
               if (
-                typeof prevImportNode?.range !== 'undefined' &&
-                typeof currentImportNode?.range !== 'undefined'
+                currentGroupKey !== prevGroupKey &&
+                !hasBlankLineBetween(prevNode, currentNode, text)
               ) {
-                const textBetween = text.slice(
-                  prevImportNode.range[1],
-                  currentImportNode.range[0],
-                );
-
-                // Check if there are at least 2 newlines (indicating a blank line)
-                const newlineCount = (textBetween.match(/\n/g) || []).length;
-                if (newlineCount < 2) {
-                  needsReordering = true;
-                  break;
-                }
+                needsReordering = true;
+                break;
               }
             }
-
-            currentGroupKey = groupKey;
           }
-        }
 
-        // Then check if import order is correct (only if identifiers are sorted and blank lines are present)
-        if (!needsReordering && imports.length > 1)
-          for (let i = 0; i < imports.length; i++) {
-            const current = imports[i];
-            const expected = expectedImports[i];
-
-            if (
-              typeof current === 'undefined' ||
-              typeof expected === 'undefined'
-            )
-              continue;
-
-            // Compare based on first identifier only (or source for side-effect imports)
+          // Check import order (only if we have an expected import to compare against)
+          if (typeof expectedImport !== 'undefined') {
             const currentFirstId =
-              current.identifiers[0]?.imported ?? current.source;
+              importInfo.identifiers[0]?.imported ?? importInfo.source;
             const expectedFirstId =
-              expected.identifiers[0]?.imported ?? expected.source;
+              expectedImport.identifiers[0]?.imported ?? expectedImport.source;
 
             if (
-              current.source !== expected.source ||
-              current.type !== expected.type ||
+              importInfo.source !== expectedImport.source ||
+              importInfo.type !== expectedImport.type ||
               currentFirstId !== expectedFirstId
             ) {
               needsReordering = true;
               break;
             }
           }
+        }
 
         if (needsReordering) {
           const [firstImport] = importNodes;
@@ -197,7 +191,9 @@ export const sortImports: Rule.RuleModule = {
 
           if (
             typeof firstImport === 'undefined' ||
-            typeof lastImport === 'undefined'
+            typeof lastImport === 'undefined' ||
+            typeof firstImport.range === 'undefined' ||
+            typeof lastImport.range === 'undefined'
           )
             return;
 
@@ -217,9 +213,7 @@ export const sortImports: Rule.RuleModule = {
                 sortedGroups,
               )) {
                 // Add blank line before this group (but not before the first group)
-                if (groupIndex > 0) {
-                  sortedStatements.push('');
-                }
+                if (groupIndex > 0) sortedStatements.push('');
 
                 // Process imports within this group
                 for (const importInfo of groupImports) {
@@ -245,9 +239,8 @@ export const sortImports: Rule.RuleModule = {
               if (
                 typeof firstImport.range === 'undefined' ||
                 typeof lastImport.range === 'undefined'
-              ) {
+              )
                 return null;
-              }
 
               return fixer.replaceTextRange(
                 [firstImport.range[0], lastImport.range[1]],

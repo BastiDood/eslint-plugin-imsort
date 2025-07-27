@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ImportNode } from '../types.js';
+import type { ImportNode, ImportType } from '../types.js';
 
-import { generateImportStatement } from './generate-import-statement.js';
 import type { FormattingPreferences } from './types.js';
+import { generateImportStatement } from './generate-import-statement.js';
 
 // Helper function to create mock import nodes
 function createMockImport(
-  type: ImportNode['type'],
+  type: ImportType,
   identifiers: string[],
   source = 'test-module',
   isTypeOnly = false,
@@ -17,7 +17,7 @@ function createMockImport(
     text: '', // Not used in generation
     line: 1,
     type,
-    identifiers: identifiers.map(name => ({ imported: name })),
+    identifiers: identifiers.map(imported => ({ imported })),
     isTypeOnly,
   };
 }

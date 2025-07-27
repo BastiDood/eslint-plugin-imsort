@@ -4,11 +4,13 @@ import type {
   ImportNamespaceSpecifier,
   ImportSpecifier,
 } from 'estree';
+
 import { describe, expect, it } from 'vitest';
+
+import type { FormattingPreferences } from './utils/types.js';
 
 import { extractImportInfo } from './utils/extract-import-info.js';
 import { generateImportStatement } from './utils/generate-import-statement.js';
-import type { FormattingPreferences } from './utils/types.js';
 
 // Mock AST node creation helpers
 function createMockNode(
