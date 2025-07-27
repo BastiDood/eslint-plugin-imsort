@@ -64,33 +64,46 @@ export const sortImports: Rule.RuleModule = {
     const text = context.sourceCode.getText();
     return {
       Program(node: Program) {
+        const importNodes = node.body.filter(
+          (statement): statement is ImportDeclaration =>
+            statement.type === 'ImportDeclaration',
+        );
+
         // Collect all import declarations
         const imports: ImportNode[] = [];
-        const importNodes: ImportDeclaration[] = [];
 
         for (const statement of node.body)
           if (statement.type === 'ImportDeclaration') {
             const importInfo = extractImportInfo(statement, text);
             imports.push(importInfo);
-            importNodes.push(statement);
           }
 
         if (imports.length === 0) return; // No imports to sort
 
-        // Group imports by priority
-        const groups = new Map<number, ImportNode[]>();
+        // Group imports by priority AND type-only
+        const groups = new Map<string, ImportNode[]>();
 
         for (const importInfo of imports) {
           const priority = getImportGroupPriority(importInfo.source);
-          const existingGroup = groups.get(priority);
+          const typeKey = importInfo.isTypeOnly ? 'type' : 'value';
+          const groupKey = `${priority}|${typeKey}`;
+          const existingGroup = groups.get(groupKey);
           if (typeof existingGroup === 'undefined')
-            groups.set(priority, [importInfo]);
+            groups.set(groupKey, [importInfo]);
           else existingGroup.push(importInfo);
         }
 
-        // Sort groups by priority and sort within each group
+        // Sort groups by priority and type, then sort within each group
         const sortedGroups = Array.from(groups.entries())
-          .sort(([a], [b]) => a - b)
+          .sort(([a], [b]) => {
+            const [aPriority, aType] = a.split('|');
+            const [bPriority, bType] = b.split('|');
+            const priorityDiff = Number(aPriority) - Number(bPriority);
+            if (priorityDiff !== 0) return priorityDiff;
+            // type-only comes before value
+            if (aType === bType) return 0;
+            return aType === 'type' ? -1 : 1;
+          })
           .map(([_, groupImports]) => sortImportsInGroup(groupImports));
 
         // Generate the expected import order
@@ -106,7 +119,51 @@ export const sortImports: Rule.RuleModule = {
             break;
           }
 
-        // Then check if import order is correct (only if identifiers are sorted)
+        // Check if blank lines between groups are missing (check this first)
+        if (imports.length > 1) {
+          let currentGroupKey: string | null = null;
+
+          for (let i = 0; i < imports.length; i++) {
+            const importInfo = imports[i];
+            if (typeof importInfo === 'undefined') continue;
+
+            const priority = getImportGroupPriority(importInfo.source);
+            const typeKey = importInfo.isTypeOnly ? 'type' : 'value';
+            const groupKey = `${priority}|${typeKey}`;
+
+            // Check if we need a blank line before this import
+            if (
+              i > 0 &&
+              currentGroupKey !== null &&
+              currentGroupKey !== groupKey
+            ) {
+              // Get the end of the previous import and start of this import
+              const prevImportNode = importNodes[i - 1];
+              const currentImportNode = importNodes[i];
+
+              if (
+                typeof prevImportNode?.range !== 'undefined' &&
+                typeof currentImportNode?.range !== 'undefined'
+              ) {
+                const textBetween = text.slice(
+                  prevImportNode.range[1],
+                  currentImportNode.range[0],
+                );
+
+                // Check if there are at least 2 newlines (indicating a blank line)
+                const newlineCount = (textBetween.match(/\n/g) || []).length;
+                if (newlineCount < 2) {
+                  needsReordering = true;
+                  break;
+                }
+              }
+            }
+
+            currentGroupKey = groupKey;
+          }
+        }
+
+        // Then check if import order is correct (only if identifiers are sorted and blank lines are present)
         if (!needsReordering && imports.length > 1)
           for (let i = 0; i < imports.length; i++) {
             const current = imports[i];
@@ -154,34 +211,33 @@ export const sortImports: Rule.RuleModule = {
 
               // Generate sorted import statements with proper grouping
               const sortedStatements: string[] = [];
-              let currentGroupPriority: number | null = null;
 
-              for (const [index, importInfo] of enumerate(expectedImports)) {
-                const priority = getImportGroupPriority(importInfo.source);
-
-                // Add blank line between groups (but not before the first group)
-                if (
-                  index > 0 &&
-                  currentGroupPriority !== null &&
-                  currentGroupPriority !== priority
-                )
+              // Process each group separately to maintain group boundaries
+              for (const [groupIndex, groupImports] of enumerate(
+                sortedGroups,
+              )) {
+                // Add blank line before this group (but not before the first group)
+                if (groupIndex > 0) {
                   sortedStatements.push('');
+                }
 
-                // Detect formatting preferences for this specific import
-                const importPreferences = detectFormattingPreferences(
-                  text,
-                  importInfo.text,
-                );
-                // Use global quote preference but import-specific trailing comma preference
-                const preferences = {
-                  ...globalPreferences,
-                  useTrailingComma: importPreferences.useTrailingComma,
-                };
+                // Process imports within this group
+                for (const importInfo of groupImports) {
+                  // Detect formatting preferences for this specific import
+                  const importPreferences = detectFormattingPreferences(
+                    text,
+                    importInfo.text,
+                  );
+                  // Use global quote preference but import-specific trailing comma preference
+                  const preferences = {
+                    ...globalPreferences,
+                    useTrailingComma: importPreferences.useTrailingComma,
+                  };
 
-                sortedStatements.push(
-                  generateImportStatement(importInfo, preferences),
-                );
-                currentGroupPriority = priority;
+                  sortedStatements.push(
+                    generateImportStatement(importInfo, preferences),
+                  );
+                }
               }
 
               const replacement = sortedStatements.join('\n');
@@ -189,8 +245,9 @@ export const sortImports: Rule.RuleModule = {
               if (
                 typeof firstImport.range === 'undefined' ||
                 typeof lastImport.range === 'undefined'
-              )
+              ) {
                 return null;
+              }
 
               return fixer.replaceTextRange(
                 [firstImport.range[0], lastImport.range[1]],

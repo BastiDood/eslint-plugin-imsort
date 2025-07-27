@@ -52,9 +52,10 @@ export function extractImportInfo(
   const { line } = node.loc.start;
 
   // Check for TypeScript type-only imports
-  // In TypeScript AST, this would be available as node.importKind === 'type'
-  // For now, we'll detect it from the source text
-  const isTypeOnly = /^\s*import\s+type\s+/u.test(text);
+  // Use AST importKind if available (TypeScript parser), otherwise fall back to regex
+  const isTypeOnly =
+    // @ts-expect-error - importKind is available with TypeScript parser
+    node.importKind === 'type' || /^\s*import\s+type\s+/u.test(text);
 
   // Parse individual type specifiers for mixed imports
   const individualTypeSpecifiers = parseIndividualTypeSpecifiers(text);

@@ -1,5 +1,6 @@
 import { createRuleTester } from 'eslint-vitest-rule-tester';
 import { describe, it } from 'vitest';
+import * as tsParser from '@typescript-eslint/parser';
 
 import { sortImports } from './rule.js';
 
@@ -11,6 +12,11 @@ describe('imsort/sort-imports', () => {
       languageOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
+        parser: tsParser,
+        parserOptions: {
+          ecmaVersion: 2022,
+          sourceType: 'module',
+        },
       },
     },
   });
@@ -48,6 +54,7 @@ import { helper } from './helper';`);
 import { utils } from '@/utils';
 
 import { deep } from '../../deep';
+
 import { config } from '../config';
 
 import { helper } from './helper';
@@ -440,6 +447,17 @@ import { config, helper, util } from './helper';`,
         code: `import { z, y, x, w, v, u, t, s, r, q, p, o, n, m, l, k, j, i, h, g, f, e, d, c, b, a } from 'alphabet';`,
         errors: 1,
         output: `import { a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z } from 'alphabet';`,
+      });
+    });
+
+    it('should separate type imports from external packages and relative imports', () => {
+      invalid({
+        code: `import type { Config } from 'eslint';
+import { rule } from './child';`,
+        errors: 1,
+        output: `import type { Config } from 'eslint';
+
+import { rule } from './child';`,
       });
     });
 
