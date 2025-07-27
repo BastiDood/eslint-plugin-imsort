@@ -2,6 +2,33 @@ import type { ImportIdentifier, ImportNode } from '../types.ts';
 
 import type { FormattingPreferences } from './types.ts';
 
+/** Sorts identifiers with special case handling for same-letter different-case */
+function sortIdentifiers(a: ImportIdentifier, b: ImportIdentifier): number {
+  // Special case: if both identifiers start with the same letter but different cases, prioritize uppercase
+  const [aFirst] = a.imported;
+  const [bFirst] = b.imported;
+  if (typeof aFirst !== 'undefined' && typeof bFirst !== 'undefined') {
+    const aLower = aFirst.toLowerCase();
+    const bLower = bFirst.toLowerCase();
+    if (aLower === bLower && aFirst !== bFirst) {
+      // Same letter, different case - prioritize uppercase
+      const aIsUpper =
+        aFirst === aFirst.toUpperCase() && aFirst !== aFirst.toLowerCase();
+      const bIsUpper =
+        bFirst === bFirst.toUpperCase() && bFirst !== bFirst.toLowerCase();
+
+      if (aIsUpper && !bIsUpper) return -1;
+      if (!aIsUpper && bIsUpper) return 1;
+    }
+  }
+
+  // Otherwise use case-sensitive sorting
+  return a.imported.localeCompare(b.imported, void 0, {
+    numeric: true,
+    sensitivity: 'variant',
+  });
+}
+
 /** Formats an identifier for import statement generation */
 function formatIdentifier(
   identifier: ImportIdentifier,
@@ -57,12 +84,7 @@ export function generateImportStatement(
       if (typeof defaultId === 'undefined')
         throw new Error('Default identifier is required');
 
-      const sortedNamed = [...namedIds].sort((a, b) =>
-        a.imported.localeCompare(b.imported, void 0, {
-          numeric: true,
-          sensitivity: 'base',
-        }),
-      );
+      const sortedNamed = [...namedIds].sort(sortIdentifiers);
 
       // Format as single line
       const defaultFormatted = formatIdentifier(
@@ -76,12 +98,7 @@ export function generateImportStatement(
     }
 
     case 'named': {
-      const sortedIds = [...identifiers].sort((a, b) =>
-        a.imported.localeCompare(b.imported, void 0, {
-          numeric: true,
-          sensitivity: 'base',
-        }),
-      );
+      const sortedIds = [...identifiers].sort(sortIdentifiers);
 
       // Format as single line
       const namedImportsStr = sortedIds

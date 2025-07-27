@@ -507,5 +507,28 @@ describe('Mixed type imports support', () => {
         "import { type Config, type Helper, type User } from './types';",
       );
     });
+
+    it('should correctly sort mixed type and value imports with type keyword stripping', () => {
+      const sourceText =
+        "import { customType, type CustomTypeValues } from 'drizzle-orm/pg-core';";
+
+      const node = createMockNode(
+        'drizzle-orm/pg-core',
+        [
+          createImportSpecifier('customType'),
+          createImportSpecifier('CustomTypeValues'),
+        ],
+        sourceText,
+      );
+
+      const extracted = extractImportInfo(node, sourceText);
+      const generated = generateImportStatement(extracted, defaultPreferences);
+
+      // Should sort by identifier name ignoring 'type' keyword, case-insensitive
+      // 'c'ustomType < 'C'ustomTypeValues (stripped of 'type')
+      expect(generated).toBe(
+        "import { type CustomTypeValues, customType } from 'drizzle-orm/pg-core';",
+      );
+    });
   });
 });
