@@ -1,6 +1,6 @@
+import { enumerate } from 'itertools';
 import type { ImportDeclaration, Program } from 'estree';
 import type { Rule } from 'eslint';
-import { enumerate } from 'itertools';
 
 import type { ImportNode } from './types.ts';
 

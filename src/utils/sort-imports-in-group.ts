@@ -14,8 +14,7 @@ export function sortImportsInGroup(imports: ImportNode[]) {
     const typeDiff = aTypeOrder - bTypeOrder;
     if (typeDiff !== 0) return typeDiff;
 
-    // Then sort by type-only vs value imports (type-only comes first)
-    if (a.isTypeOnly !== b.isTypeOnly) return a.isTypeOnly ? -1 : 1;
+    // Type-only vs value imports are treated the same for sorting purposes
 
     // Sort by first identifier (alphabetically)
     const aFirstId = a.identifiers[0]?.imported ?? a.source;

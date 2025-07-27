@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import type {
   ImportDeclaration,
   ImportDefaultSpecifier,
@@ -5,11 +6,8 @@ import type {
   ImportSpecifier,
 } from 'estree';
 
-import { describe, expect, it } from 'vitest';
-
-import type { FormattingPreferences } from './utils/types.js';
-
 import { extractImportInfo } from './utils/extract-import-info.js';
+import type { FormattingPreferences } from './utils/types.js';
 import { generateImportStatement } from './utils/generate-import-statement.js';
 
 // Mock AST node creation helpers

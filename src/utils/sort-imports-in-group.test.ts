@@ -212,6 +212,154 @@ describe('sortImportsInGroup', () => {
       expect(sorted[1]?.source).toBe('module-b');
     });
   });
+  describe('regression tests - import type priority', () => {
+    it('should correctly prioritize import types within same group', () => {
+      const imports: ImportNode[] = [
+        // Named imports
+        createMockImport('named', ['test'], './relative'),
+        createMockImport('named', ['world'], '@world'),
+        // Default imports
+        createMockImport('default', ['defaulted'], './relative'),
+        createMockImport('default', ['hello'], '@/root'),
+        // Namespace imports
+        createMockImport('namespace', ['namespace'], './relative'),
+        // Side-effect imports
+        createMockImport('side-effect', [], './relative'),
+      ];
+      const sorted = sortImportsInGroup(imports);
+
+      // Should sort by import type priority: side-effect → namespace → default → named
+      expect(
+        sorted.map(imp => ({
+          type: imp.type,
+          firstId: imp.identifiers[0]?.imported || imp.source,
+        })),
+      ).toEqual([
+        { type: 'side-effect', firstId: './relative' },
+        { type: 'namespace', firstId: 'namespace' },
+        { type: 'default', firstId: 'defaulted' },
+        { type: 'default', firstId: 'hello' },
+        { type: 'named', firstId: 'test' },
+        { type: 'named', firstId: 'world' },
+      ]);
+    });
+
+    it('should handle type-only vs value imports correctly', () => {
+      const imports: ImportNode[] = [
+        // Value imports
+        createMockImport('default', ['valueDefault'], './module'),
+        createMockImport('named', ['valueNamed'], './module'),
+        // Type-only imports
+        {
+          ...createMockImport('default', ['typeDefault'], './module'),
+          isTypeOnly: true,
+        },
+        {
+          ...createMockImport('named', ['typeNamed'], './module'),
+          isTypeOnly: true,
+        },
+      ];
+      const sorted = sortImportsInGroup(imports);
+
+      // Type-only vs value imports should be treated the same for sorting
+      // Should sort by import type priority first, then by first identifier
+      expect(
+        sorted.map(imp => ({
+          type: imp.type,
+          isTypeOnly: imp.isTypeOnly,
+          firstId: imp.identifiers[0]?.imported,
+        })),
+      ).toEqual([
+        { type: 'default', isTypeOnly: true, firstId: 'typeDefault' },
+        { type: 'default', isTypeOnly: false, firstId: 'valueDefault' },
+        { type: 'named', isTypeOnly: true, firstId: 'typeNamed' },
+        { type: 'named', isTypeOnly: false, firstId: 'valueNamed' },
+      ]);
+    });
+
+    it('should sort alphabetically within same import type', () => {
+      const imports: ImportNode[] = [
+        // Default imports with different first identifiers
+        createMockImport('default', ['zebra'], './module'),
+        createMockImport('default', ['alpha'], './module'),
+        createMockImport('default', ['beta'], './module'),
+        // Named imports with different first identifiers
+        createMockImport('named', ['zebra'], './module'),
+        createMockImport('named', ['alpha'], './module'),
+        createMockImport('named', ['beta'], './module'),
+      ];
+      const sorted = sortImportsInGroup(imports);
+
+      // Should sort by import type first, then alphabetically by first identifier
+      expect(
+        sorted.map(imp => ({
+          type: imp.type,
+          firstId: imp.identifiers[0]?.imported,
+        })),
+      ).toEqual([
+        { type: 'default', firstId: 'alpha' },
+        { type: 'default', firstId: 'beta' },
+        { type: 'default', firstId: 'zebra' },
+        { type: 'named', firstId: 'alpha' },
+        { type: 'named', firstId: 'beta' },
+        { type: 'named', firstId: 'zebra' },
+      ]);
+    });
+
+    it('should handle complex mixed scenario with all import types', () => {
+      const imports: ImportNode[] = [
+        // Side-effect imports
+        createMockImport('side-effect', [], './styles.css'),
+        createMockImport('side-effect', [], './polyfill.js'),
+        // Namespace imports
+        createMockImport('namespace', ['utils'], './utils'),
+        createMockImport('namespace', ['api'], './api'),
+        // Default imports
+        createMockImport('default', ['Component'], './Component'),
+        createMockImport('default', ['config'], './config'),
+        createMockImport('default', ['helper'], './helper'),
+        // Named imports
+        createMockImport('named', ['useState'], './hooks'),
+        createMockImport('named', ['Button'], './components'),
+        createMockImport('named', ['api'], './api'),
+        // Type-only imports
+        {
+          ...createMockImport('default', ['Type'], './types'),
+          isTypeOnly: true,
+        },
+        {
+          ...createMockImport('named', ['Props'], './types'),
+          isTypeOnly: true,
+        },
+      ];
+      const sorted = sortImportsInGroup(imports);
+
+      // Should sort by: side-effect → namespace → default → named
+      // Within each type, sort alphabetically by first identifier
+      // Type-only vs value imports are treated the same
+      expect(
+        sorted.map(imp => ({
+          type: imp.type,
+          isTypeOnly: imp.isTypeOnly,
+          firstId: imp.identifiers[0]?.imported || imp.source,
+        })),
+      ).toEqual([
+        { type: 'side-effect', isTypeOnly: false, firstId: './polyfill.js' },
+        { type: 'side-effect', isTypeOnly: false, firstId: './styles.css' },
+        { type: 'namespace', isTypeOnly: false, firstId: 'api' },
+        { type: 'namespace', isTypeOnly: false, firstId: 'utils' },
+        { type: 'default', isTypeOnly: false, firstId: 'Component' },
+        { type: 'default', isTypeOnly: false, firstId: 'config' },
+        { type: 'default', isTypeOnly: false, firstId: 'helper' },
+        { type: 'default', isTypeOnly: true, firstId: 'Type' },
+        { type: 'named', isTypeOnly: false, firstId: 'api' },
+        { type: 'named', isTypeOnly: false, firstId: 'Button' },
+        { type: 'named', isTypeOnly: true, firstId: 'Props' },
+        { type: 'named', isTypeOnly: false, firstId: 'useState' },
+      ]);
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle empty array', () => {
       const result = sortImportsInGroup([]);

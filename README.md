@@ -62,23 +62,24 @@ The plugin organizes imports into the following groups, in order:
 4. **Third-party packages** (bare imports from `node_modules`)
 
    ```js
-   import React from 'react';
-   import express from 'express';
    import type { Config } from '@types/config';
+   import express from 'express';
+   import React from 'react';
+   import { useState } from 'react';
    ```
 
-5. **Custom-aliased imports with $ and ~ prefixes** (`$lib/*`, `$app/*`, `~/*`, `~shared/*`, etc.)
+5. **Custom-aliased imports with $ and ~ prefixes** (`$lib/*`, `$app/*`, `~shared/*`, etc.)
 
    ```js
-   import config from '~/config';
    import shared from '~shared/types';
    import { database } from '$lib/server/database';
    import { stores } from '$app/stores';
    ```
 
-6. **Custom-aliased imports with @/ prefix** (`@/utils`, `@/lib/*`, etc.)
+6. **Custom-aliased imports with @/ and ~/ prefixes** (`@/utils`, `~/config`, etc.)
 
    ```js
+   import config from '~/config';
    import { utils } from '@/utils';
    import { components } from '@/components/Button';
    ```
@@ -99,7 +100,23 @@ The plugin organizes imports into the following groups, in order:
    import { hello } from './helper/test/hello';
    ```
 
-Each group is separated by a blank line, and imports within each group are sorted alphabetically.
+Each group is separated by a blank line, and imports within each group are sorted by:
+
+1. **Import type priority**: side-effect → namespace → default → named
+2. **First imported identifier** alphabetically
+3. **Source path** as fallback when identifiers are the same
+
+> [!NOTE]
+> Type-only imports (`import type`) are treated the same as value imports for sorting purposes.
+
+> [!NOTE]
+> **On `~` prefix distinction:**
+>
+> - `~prefix/` (like `~shared/`) is treated as a custom alias (group 5)
+> - `~/prefix` (like `~/config`) is treated as a root alias (group 6)
+
+**Sorting within groups:**
+Within the same import type, imports are sorted by the first imported identifier alphabetically. For example, `import { createRoot } from 'react-dom/client'` comes before `import { useState } from 'react'` because `createRoot` < `useState` alphabetically.
 
 ## Example
 
@@ -122,8 +139,8 @@ import { database } from '$lib/server/database';
 ```js
 import fs from 'node:fs';
 
-import express from 'express';
 import React from 'react';
+import express from 'express';
 
 import { database } from '$lib/server/database';
 
