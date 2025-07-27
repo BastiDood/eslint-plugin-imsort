@@ -126,10 +126,29 @@ describe('sortImportsInGroup', () => {
         createMockImport('named', ['Beta'], 'module'),
       ];
       const sorted = sortImportsInGroup(imports);
+      // Case-insensitive sorting: alphabetical order regardless of case
+      // 'a'lpha < 'B'eta < 'Z'eus
       expect(sorted.map(imp => imp.identifiers[0]?.imported)).toEqual([
         'alpha',
         'Beta',
         'Zeus',
+      ]);
+    });
+    it('should demonstrate sorting ignoring type keyword but preserving it', () => {
+      const imports: ImportNode[] = [
+        createMockImport('named', ['type CustomValue'], 'module'),
+        createMockImport('named', ['customType'], 'module'),
+        createMockImport('named', ['TypeHelper'], 'module'),
+        createMockImport('named', ['typeHelper'], 'module'),
+      ];
+      const sorted = sortImportsInGroup(imports);
+      // Sort by identifier name ignoring 'type' keyword, case-insensitive
+      // 'c'ustomType < 'C'ustomValue < 'T'ypeHelper < 't'ypeHelper
+      expect(sorted.map(imp => imp.identifiers[0]?.imported)).toEqual([
+        'customType',
+        'type CustomValue',
+        'TypeHelper',
+        'typeHelper',
       ]);
     });
   });
