@@ -1,4 +1,4 @@
-import * as tsParser from '@typescript-eslint/parser';
+import tsParser from '@typescript-eslint/parser';
 import { createRuleTester } from 'eslint-vitest-rule-tester';
 import { describe, it } from 'vitest';
 
@@ -469,6 +469,30 @@ import { helper } from "./helper";`,
         output: `import { useCallback, useState } from "react";
 
 import { helper } from "./helper";`,
+      });
+    });
+  });
+
+  describe('regression tests', () => {
+    it('should sort type imports by first identifier when from same group', () => {
+      invalid({
+        code: `import type { Rule } from 'eslint';
+import type { ImportDeclaration, Program } from 'estree';`,
+        errors: 1,
+        output: `import type { ImportDeclaration, Program } from 'estree';
+import type { Rule } from 'eslint';`,
+      });
+    });
+
+    it('should sort type imports by first identifier when from different sources in same group', () => {
+      invalid({
+        code: `import type { Rule } from 'eslint';
+import type { ImportDeclaration, Program } from 'estree';
+import type { Config } from 'eslint';`,
+        errors: 1,
+        output: `import type { Config } from 'eslint';
+import type { ImportDeclaration, Program } from 'estree';
+import type { Rule } from 'eslint';`,
       });
     });
   });

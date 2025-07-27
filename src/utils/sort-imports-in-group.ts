@@ -17,6 +17,19 @@ export function sortImportsInGroup(imports: ImportNode[]) {
     // Then sort by type-only vs value imports (type-only comes first)
     if (a.isTypeOnly !== b.isTypeOnly) return a.isTypeOnly ? -1 : 1;
 
+    // For type-only imports, sort by first identifier first, then by source
+    if (a.isTypeOnly && b.isTypeOnly) {
+      const aFirstId = a.identifiers[0]?.imported ?? a.source;
+      const bFirstId = b.identifiers[0]?.imported ?? b.source;
+      if (typeof aFirstId !== 'undefined' && typeof bFirstId !== 'undefined') {
+        const identifierComparison = aFirstId.localeCompare(bFirstId, void 0, {
+          numeric: true,
+          sensitivity: 'base',
+        });
+        if (identifierComparison !== 0) return identifierComparison;
+      }
+    }
+
     // Then sort by source for different sources within the same type
     const sourceComparison = a.source.localeCompare(b.source, void 0, {
       numeric: true,

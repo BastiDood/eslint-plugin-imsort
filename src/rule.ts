@@ -1,6 +1,5 @@
-import type { Rule } from 'eslint';
 import type { ImportDeclaration, Program } from 'estree';
-
+import type { Rule } from 'eslint';
 import { enumerate } from 'itertools';
 
 import type { ImportNode } from './types.ts';
@@ -117,11 +116,7 @@ export const sortImports: Rule.RuleModule = {
 
         // Sort groups by priority, then sort within each group
         const sortedGroups = Array.from(groups.entries())
-          .sort(([a], [b]) => {
-            const aPriority = Number(a);
-            const bPriority = Number(b);
-            return aPriority - bPriority;
-          })
+          .sort(([a], [b]) => a - b)
           .map(([_, groupImports]) => sortImportsInGroup(groupImports));
 
         // Generate the expected import order
@@ -131,10 +126,7 @@ export const sortImports: Rule.RuleModule = {
         let needsReordering = false;
 
         // Check identifiers sorting, blank lines, and import order in one loop
-        for (let i = 0; i < imports.length; i++) {
-          const importInfo = imports[i];
-          const expectedImport = expectedImports[i];
-
+        for (const [i, importInfo] of enumerate(imports)) {
           if (typeof importInfo === 'undefined') continue;
 
           // Check if identifiers are sorted
@@ -168,6 +160,7 @@ export const sortImports: Rule.RuleModule = {
           }
 
           // Check import order (only if we have an expected import to compare against)
+          const expectedImport = expectedImports[i];
           if (typeof expectedImport !== 'undefined') {
             const currentFirstId =
               importInfo.identifiers[0]?.imported ?? importInfo.source;
