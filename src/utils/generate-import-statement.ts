@@ -1,33 +1,7 @@
 import type { ImportIdentifier, ImportNode } from '../types.ts';
 
 import type { FormattingPreferences } from './types.ts';
-
-/** Sorts identifiers with special case handling for same-letter different-case */
-function sortIdentifiers(a: ImportIdentifier, b: ImportIdentifier): number {
-  // Special case: if both identifiers start with the same letter but different cases, prioritize uppercase
-  const [aFirst] = a.imported;
-  const [bFirst] = b.imported;
-  if (typeof aFirst !== 'undefined' && typeof bFirst !== 'undefined') {
-    const aLower = aFirst.toLowerCase();
-    const bLower = bFirst.toLowerCase();
-    if (aLower === bLower && aFirst !== bFirst) {
-      // Same letter, different case - prioritize uppercase
-      const aIsUpper =
-        aFirst === aFirst.toUpperCase() && aFirst !== aFirst.toLowerCase();
-      const bIsUpper =
-        bFirst === bFirst.toUpperCase() && bFirst !== bFirst.toLowerCase();
-
-      if (aIsUpper && !bIsUpper) return -1;
-      if (!aIsUpper && bIsUpper) return 1;
-    }
-  }
-
-  // Otherwise use case-sensitive sorting
-  return a.imported.localeCompare(b.imported, void 0, {
-    numeric: true,
-    sensitivity: 'variant',
-  });
-}
+import { sortIdentifiers } from './sort.ts';
 
 /** Formats an identifier for import statement generation */
 function formatIdentifier(
@@ -84,24 +58,26 @@ export function generateImportStatement(
       if (typeof defaultId === 'undefined')
         throw new Error('Default identifier is required');
 
-      const sortedNamed = [...namedIds].sort(sortIdentifiers);
+      // Sort named imports using centralized sorting logic
+      const sortedNamedIds = sortIdentifiers(namedIds);
 
       // Format as single line
       const defaultFormatted = formatIdentifier(
         defaultId,
         suppressIndividualTypes,
       );
-      const namedImportsStr = sortedNamed
+      const namedImportsStr = sortedNamedIds
         .map(id => formatIdentifier(id, suppressIndividualTypes))
         .join(', ');
       return `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr} } from ${quote}${source}${quote};`;
     }
 
     case 'named': {
-      const sortedIds = [...identifiers].sort(sortIdentifiers);
+      // Sort identifiers using centralized sorting logic
+      const sortedIdentifiers = sortIdentifiers(identifiers);
 
-      // Format as single line for consistency
-      const namedImportsStr = sortedIds
+      // Format as single line
+      const namedImportsStr = sortedIdentifiers
         .map(id => formatIdentifier(id, suppressIndividualTypes))
         .join(', ');
       return `import ${statementTypePrefix}{ ${namedImportsStr} } from ${quote}${source}${quote};`;

@@ -118,16 +118,12 @@ export function extractImportInfo(
         };
         if (imported !== local) identifier.local = local;
 
-        // Check if this specific specifier is type-only using TypeScript parser info
-        // @ts-expect-error - importKind is available with TypeScript parser on individual specifiers
-        const specifierIsTypeOnly = spec.importKind === 'type';
+        // Check if this specific specifier is type-only
+        // For mixed imports, we need to rely on text parsing since TypeScript parser
+        // doesn't set importKind on individual specifiers
+        const specifierIsTypeOnly = individualTypeSpecifiers.has(imported);
 
-        if (
-          isTypeOnly ||
-          specifierIsTypeOnly ||
-          individualTypeSpecifiers.has(imported)
-        )
-          identifier.isTypeOnly = true;
+        if (isTypeOnly || specifierIsTypeOnly) identifier.isTypeOnly = true;
 
         identifiers.push(identifier);
       }
@@ -149,16 +145,12 @@ export function extractImportInfo(
         };
         if (imported !== local) identifier.local = local;
 
-        // Check if this specific specifier is type-only using TypeScript parser info
-        // @ts-expect-error - importKind is available with TypeScript parser on individual specifiers
-        const specifierIsTypeOnly = spec.importKind === 'type';
+        // Check if this specific specifier is type-only
+        // For mixed imports, we need to rely on text parsing since TypeScript parser
+        // doesn't set importKind on individual specifiers
+        const specifierIsTypeOnly = individualTypeSpecifiers.has(imported);
 
-        if (
-          isTypeOnly ||
-          specifierIsTypeOnly ||
-          individualTypeSpecifiers.has(imported)
-        )
-          identifier.isTypeOnly = true;
+        if (isTypeOnly || specifierIsTypeOnly) identifier.isTypeOnly = true;
 
         identifiers.push(identifier);
       }

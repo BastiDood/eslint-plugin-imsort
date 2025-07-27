@@ -4,6 +4,7 @@ import type { Rule } from 'eslint';
 
 import type { ImportNode } from './types.ts';
 
+import { areIdentifiersSorted as areIdentifiersSortedArray } from './utils/sort.ts';
 import { detectFormattingPreferences } from './utils/detect-formatting-preferences.ts';
 import { extractImportInfo } from './utils/extract-import-info.ts';
 import { generateImportStatement } from './utils/generate-import-statement.ts';
@@ -19,32 +20,11 @@ function areIdentifiersSorted(importInfo: ImportNode): boolean {
     if (importInfo.identifiers.length <= 1) return true; // Just default import
     // For default + named imports, check if named imports (after first) are sorted
     const namedIdentifiers = importInfo.identifiers.slice(1);
-    if (namedIdentifiers.length <= 1) return true;
-
-    const sortedNamed = [...namedIdentifiers].sort((a, b) =>
-      a.imported.localeCompare(b.imported, void 0, {
-        numeric: true,
-        sensitivity: 'base',
-      }),
-    );
-    return namedIdentifiers.every(
-      (id, index) => id.imported === sortedNamed[index]?.imported,
-    );
+    return areIdentifiersSortedArray(namedIdentifiers);
   }
 
-  if (importInfo.type === 'named') {
-    if (importInfo.identifiers.length <= 1) return true;
-
-    const sortedIdentifiers = [...importInfo.identifiers].sort((a, b) =>
-      a.imported.localeCompare(b.imported, void 0, {
-        numeric: true,
-        sensitivity: 'base',
-      }),
-    );
-    return importInfo.identifiers.every(
-      (id, index) => id.imported === sortedIdentifiers[index]?.imported,
-    );
-  }
+  if (importInfo.type === 'named')
+    return areIdentifiersSortedArray(importInfo.identifiers);
 
   return true;
 }
@@ -162,19 +142,31 @@ export const sortImports: Rule.RuleModule = {
           // Check import order (only if we have an expected import to compare against)
           const expectedImport = expectedImports[i];
           if (typeof expectedImport !== 'undefined') {
-            const currentFirstId =
-              importInfo.identifiers[0]?.imported ?? importInfo.source;
-            const expectedFirstId =
-              expectedImport.identifiers[0]?.imported ?? expectedImport.source;
-
+            // Compare the entire import structure, not just the first identifier
             if (
               importInfo.source !== expectedImport.source ||
               importInfo.type !== expectedImport.type ||
-              currentFirstId !== expectedFirstId
+              importInfo.identifiers.length !==
+                expectedImport.identifiers.length
             ) {
               needsReordering = true;
               break;
             }
+
+            // Compare each identifier to ensure they match exactly
+            for (const [j, currentId] of enumerate(importInfo.identifiers)) {
+              const expectedId = expectedImport.identifiers[j];
+              if (
+                typeof expectedId === 'undefined' ||
+                currentId.imported !== expectedId.imported ||
+                (currentId.isTypeOnly ?? false) !==
+                  (expectedId.isTypeOnly ?? false)
+              ) {
+                needsReordering = true;
+                break;
+              }
+            }
+            if (needsReordering) break;
           }
         }
 

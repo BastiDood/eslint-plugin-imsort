@@ -525,7 +525,7 @@ describe('Mixed type imports support', () => {
       const generated = generateImportStatement(extracted, defaultPreferences);
 
       // Should sort by identifier name ignoring 'type' keyword, case-insensitive
-      // 'c'ustomType < 'C'ustomTypeValues (stripped of 'type')
+      // 'C'ustomTypeValues < 'c'ustomType (case-insensitive alphabetical)
       expect(generated).toBe(
         "import { type CustomTypeValues, customType } from 'drizzle-orm/pg-core';",
       );
