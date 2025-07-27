@@ -225,11 +225,14 @@ Within the same import type, imports are sorted by the first imported identifier
 - import { type CustomValue } from './types';
 - import { TypeHelper } from './helpers';
 - import { typeHelper } from './helpers';
-+ import { customType } from './types';
 + import { type CustomValue } from './types';
++ import { customType } from './types';
 + import { TypeHelper } from './helpers';
 + import { typeHelper } from './helpers';
 ```
+
+> [!NOTE]
+> This rule does not convert `import { type CustomValue }` to `import type { CustomValue }` as that is beyond the scope of its functionality.
 
 ## Rule Options
 
