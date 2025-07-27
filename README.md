@@ -26,7 +26,7 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 
 Add the plugin to your `eslint.config.js`:
 
-```js
+```ts
 import imsort from '@bastidood/eslint-plugin-imsort';
 
 export default [
@@ -44,28 +44,28 @@ The plugin organizes imports into the following groups, in order:
 
 1. **Runtime-namespaced imports** (`node:`, `bun:`, `deno:`, `cloudflare:`)
 
-   ```js
+   ```ts
    import fs from 'node:fs';
    import path from 'node:path';
    ```
 
 2. **Registry-namespaced imports** (`npm:`, `jsr:`, `esm:`, `unpkg:`, `cdn:`)
 
-   ```js
+   ```ts
    import lodash from 'npm:lodash';
    import react from 'jsr:@react/core';
    ```
 
 3. **Generic namespaced imports** (any `namespace:` pattern)
 
-   ```js
+   ```ts
    import config from 'app:config';
    import utils from 'shared:utils';
    ```
 
 4. **Third-party packages** (bare imports from `node_modules`)
 
-   ```js
+   ```ts
    import type { Config } from '@types/config';
    import express from 'express';
    import React from 'react';
@@ -74,7 +74,7 @@ The plugin organizes imports into the following groups, in order:
 
 5. **Custom-aliased imports with $ and ~ prefixes** (`$lib/*`, `$app/*`, `~shared/*`, etc.)
 
-   ```js
+   ```ts
    import shared from '~shared/types';
    import { database } from '$lib/server/database';
    import { stores } from '$app/stores';
@@ -82,7 +82,7 @@ The plugin organizes imports into the following groups, in order:
 
 6. **Custom-aliased imports with @/ and ~/ prefixes** (`@/utils`, `~/config`, etc.)
 
-   ```js
+   ```ts
    import config from '~/config';
    import { utils } from '@/utils';
    import { components } from '@/components/Button';
@@ -90,7 +90,7 @@ The plugin organizes imports into the following groups, in order:
 
 7. **Relative imports** (`../`, `../../`, etc.) - grouped by decreasing depth
 
-   ```js
+   ```ts
    import { deep } from '../../../utils/deep';
 
    import { types } from '../../types';
