@@ -7,7 +7,7 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 - **Automatic import sorting** within logical groups
 - **Smart import grouping** based on import source patterns
 - **Blank line separation** between different import groups
-- **Preserves formatting preferences** (quotes, trailing commas, line length)
+- **Preserves original formatting** (quotes, spacing)
 - **Zero configuration** - works out of the box with sensible defaults
 - **Auto-fixable** - automatically sorts imports when running `eslint --fix`
 
@@ -199,16 +199,15 @@ import { typeHelper } from './helpers';
 
 Currently, the plugin works with zero configuration and doesn't accept any options. The sorting and grouping behavior is opinionated and designed to work well for most TypeScript/JavaScript projects.
 
-## Formatting Detection
+## Formatting Preservation
 
-The plugin automatically detects your code's formatting preferences:
+The plugin preserves the original formatting of each import statement:
 
-- **Quote style** (single versus double quotes)
-- **Trailing commas** in import statements
-- **Line length** for formatting decisions
+- **Quote style** - maintains the original quote style (single or double quotes) for each import
+- **Spacing** - preserves the original spacing and formatting
 
-This ensures the generated import statements match your existing code style.
+This ensures the generated import statements maintain consistency with your existing code style while letting dedicated formatters like Prettier handle formatting decisions.
 
 ## Integration with Prettier
 
-This plugin is designed to work alongside Prettier. The plugin handles import ordering and grouping, while Prettier handles general code formatting. Make sure to run ESLint before Prettier in your formatting pipeline.
+This plugin is designed to work alongside Prettier. The plugin handles import ordering and grouping while preserving original formatting, while Prettier handles general code formatting decisions like trailing commas and line breaks. Make sure to run ESLint before Prettier in your formatting pipeline.
