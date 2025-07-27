@@ -10,6 +10,10 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 - **Preserves original formatting** (quotes, spacing)
 - **Zero configuration** - works out of the box with sensible defaults
 - **Auto-fixable** - automatically sorts imports when running `eslint --fix`
+- **Enhanced mixed type import support** - properly handles mixed type and value imports in the same statement
+- **Circular fix prevention** - prevents unnecessary fixes when imports are already correctly sorted
+- **Natural sorting** - supports natural number sorting (e.g., `item1`, `item2`, `item10`, `item20`, etc.)
+- **Case-sensitive sorting** - prioritizes uppercase identifiers over lowercase when they start with the same letter
 
 ## Installation
 
@@ -113,6 +117,40 @@ Each group is separated by a blank line, and imports within each group are sorte
 
 The `type` keyword in individual import specifiers (e.g., `{ type User }`) is ignored for sorting purposes but preserved in the output. For example, `{ type CustomValue }` and `{ customType }` are sorted based on `CustomValue` vs `customType` respectively.
 
+### Mixed type import support
+
+The plugin now fully supports mixed type imports where some specifiers are type-only and others are value imports:
+
+```diff
+- import { helper, type Config, value, type User } from './types';
++ import { type Config, helper, type User, value } from './types';
+```
+
+This works for both standalone named imports and mixed default + named imports:
+
+```diff
+- import React, { useEffect, type Component, useState } from 'react';
++ import React, { type Component, useEffect, useState } from 'react';
+```
+
+### Natural sorting
+
+The plugin supports natural sorting for identifiers containing numbers:
+
+```diff
+- import { item10, item1, item20, item2 } from './utils';
++ import { item1, item2, item10, item20 } from './utils';
+```
+
+### Case-sensitive sorting with uppercase precedence
+
+When identifiers start with the same letter but have different cases, uppercase identifiers are prioritized:
+
+```diff
+- import { customType, CustomTypeValues, typeHelper, TypeHelper } from './types';
++ import { CustomTypeValues, customType, TypeHelper, typeHelper } from './types';
+```
+
 ### On `~` prefix distinction
 
 - `~prefix/` (like `~shared/`) is treated as a custom alias (group 5)
@@ -129,70 +167,68 @@ Within the same import type, imports are sorted by the first imported identifier
 
 ## Example
 
-### Before
-
-```js
-import { helper } from './helper';
-import React from 'react';
-import { config } from '../config';
-import fs from 'node:fs';
-import { utils } from '@/utils';
-import { deep } from '../../deep';
-import express from 'express';
-import type { User } from './types';
-import { database } from '$lib/server/database';
+```diff
+- import { helper } from './helper';
+- import React from 'react';
+- import { config } from '../config';
+- import fs from 'node:fs';
+- import { utils } from '@/utils';
+- import { deep } from '../../deep';
+- import express from 'express';
+- import type { User } from './types';
+- import { database } from '$lib/server/database';
++ import fs from 'node:fs';
++
++ import express from 'express';
++ import React from 'react';
++
++ import { database } from '$lib/server/database';
++
++ import { utils } from '@/utils';
++
++ import { deep } from '../../deep';
++
++ import { config } from '../parent';
++
++ import { helper } from './helper';
++ import type { User } from './types';
 ```
 
-### After
+### Mixed type import example
 
-```js
-import fs from 'node:fs';
-
-import express from 'express';
-import React from 'react';
-
-import { database } from '$lib/server/database';
-
-import { utils } from '@/utils';
-
-import { deep } from '../../deep';
-
-import { config } from '../config';
-
-import { helper } from './helper';
-import type { User } from './types';
+```diff
+- import { helper, type Config, value, type User } from './types';
+- import React, { useEffect, type Component, useState } from 'react';
++ import React, { type Component, useEffect, useState } from 'react';
++
++ import { type Config, helper, type User, value } from './types';
 ```
 
-### Case-insensitive sorting example
+### Natural sorting example
 
-```js
-// Before
-import { FormattingPreferences } from './preferences';
-import { extractImportInfo } from './utils';
-import { Extract } from './extract';
-import { formattingPreferences } from './preferences';
+```diff
+- import { item10, item1, item20, item2 } from './utils';
++ import { item1, item2, item10, item20 } from './utils';
+```
 
-// After
-import { Extract } from './extract';
-import { extractImportInfo } from './utils';
-import { FormattingPreferences } from './preferences';
-import { formattingPreferences } from './preferences';
+### Case-sensitive sorting example
+
+```diff
+- import { customType, CustomTypeValues, typeHelper, TypeHelper } from './types';
++ import { CustomTypeValues, customType, TypeHelper, typeHelper } from './types';
 ```
 
 ### Type keyword handling example
 
-```js
-// Before
-import { customType } from './types';
-import { type CustomValue } from './types';
-import { TypeHelper } from './helpers';
-import { typeHelper } from './helpers';
-
-// After
-import { customType } from './types';
-import { type CustomValue } from './types';
-import { TypeHelper } from './helpers';
-import { typeHelper } from './helpers';
+```diff
+- import { customType } from './types';
+- import { type CustomValue } from './types';
+- import { TypeHelper } from './helpers';
+- import { typeHelper } from './helpers';
++ import { customType } from './types';
++ import { type CustomValue } from './types';
++ import { TypeHelper } from './helpers';
++ import { typeHelper } from './helpers';
 ```
 
 ## Rule Options
