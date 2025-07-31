@@ -249,4 +249,4 @@ This ensures the generated import statements maintain consistency with your exis
 
 ## Integration with Prettier
 
-This plugin is designed to work alongside Prettier. The plugin handles import ordering and grouping while preserving original formatting, while Prettier handles general code formatting decisions like trailing commas and line breaks. Make sure to run ESLint before Prettier in your formatting pipeline.
+This plugin is designed to work alongside Prettier. The plugin handles import ordering and grouping while preserving original formatting, while Prettier handles general code formatting decisions like trailing commas and line breaks. Make sure to run the ESLint autofixes before Prettier in your formatting pipeline.
