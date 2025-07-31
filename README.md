@@ -66,9 +66,9 @@ The plugin organizes imports into the following groups, in order:
 4. **Third-party packages** (bare imports from `node_modules`)
 
    ```ts
-   import type { Config } from '@types/config';
    import express from 'express';
    import React from 'react';
+   import type { Config } from '@types/config';
    import { useState } from 'react';
    ```
 
