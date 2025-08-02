@@ -22,6 +22,18 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 
 [`sort-imports`]: https://eslint.org/docs/latest/rules/sort-imports
 
+Install with `pnpm`:
+
+```bash
+pnpm add -D @bastidood/eslint-plugin-imsort
+```
+
+Or with `npm`:
+
+```bash
+npm install --save-dev @bastidood/eslint-plugin-imsort
+```
+
 ### ESLint Flat Config (recommended!)
 
 Add the plugin to your `eslint.config.js`:
