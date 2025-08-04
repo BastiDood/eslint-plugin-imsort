@@ -25,7 +25,7 @@ An opinionated ESLint plugin for sorting and grouping imports automatically.
 Install with `pnpm`:
 
 ```bash
-pnpm add -D @bastidood/eslint-plugin-imsort
+pnpm add --save-dev @bastidood/eslint-plugin-imsort
 ```
 
 Or with `npm`:
