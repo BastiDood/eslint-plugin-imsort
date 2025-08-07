@@ -53,6 +53,7 @@ export function extractImportInfo(
 
   // Check for TypeScript type-only imports
   // Use AST importKind if available (TypeScript parser), otherwise fall back to regex
+  // Note: For mixed imports (like `import { type User, helper }`), the entire import is NOT type-only
   const isTypeOnly =
     // @ts-expect-error - importKind is available with TypeScript parser
     node.importKind === 'type' || /^\s*import\s+type\s+/u.test(text);

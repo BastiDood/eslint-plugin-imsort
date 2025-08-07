@@ -28,19 +28,21 @@ export function generateImportStatement(
   const suppressIndividualTypes = isTypeOnly; // If statement is type-only, don't add individual type prefixes
   const quote = preferences.useSingleQuotes ? "'" : '"';
 
+  // eslint-disable-next-line @typescript-eslint/init-declarations
+  let importStatement: string;
   switch (type) {
     case 'side-effect':
-      return `import ${statementTypePrefix}${quote}${source}${quote};`;
-
+      importStatement = `import ${statementTypePrefix}${quote}${source}${quote};`;
+      break;
     case 'namespace': {
       const [identifier] = identifiers;
       if (typeof identifier === 'undefined')
         throw new Error('Namespace identifier is required');
 
       // For namespace imports, type keyword should always be at statement level
-      return `import ${statementTypePrefix}* as ${identifier.imported} from ${quote}${source}${quote};`;
+      importStatement = `import ${statementTypePrefix}* as ${identifier.imported} from ${quote}${source}${quote};`;
+      break;
     }
-
     case 'default': {
       if (identifiers.length === 1) {
         const [identifier] = identifiers;
@@ -51,27 +53,28 @@ export function generateImportStatement(
           identifier,
           suppressIndividualTypes,
         );
-        return `import ${statementTypePrefix}${formattedIdentifier} from ${quote}${source}${quote};`;
+        importStatement = `import ${statementTypePrefix}${formattedIdentifier} from ${quote}${source}${quote};`;
+      } else {
+        // Default + named imports
+        const [defaultId, ...namedIds] = identifiers;
+        if (typeof defaultId === 'undefined')
+          throw new Error('Default identifier is required');
+
+        // Sort named imports using centralized sorting logic
+        const sortedNamedIds = sortIdentifiers(namedIds);
+
+        // Format as single line
+        const defaultFormatted = formatIdentifier(
+          defaultId,
+          suppressIndividualTypes,
+        );
+        const namedImportsStr = sortedNamedIds
+          .map(id => formatIdentifier(id, suppressIndividualTypes))
+          .join(', ');
+        importStatement = `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr} } from ${quote}${source}${quote};`;
       }
-      // Default + named imports
-      const [defaultId, ...namedIds] = identifiers;
-      if (typeof defaultId === 'undefined')
-        throw new Error('Default identifier is required');
-
-      // Sort named imports using centralized sorting logic
-      const sortedNamedIds = sortIdentifiers(namedIds);
-
-      // Format as single line
-      const defaultFormatted = formatIdentifier(
-        defaultId,
-        suppressIndividualTypes,
-      );
-      const namedImportsStr = sortedNamedIds
-        .map(id => formatIdentifier(id, suppressIndividualTypes))
-        .join(', ');
-      return `import ${statementTypePrefix}${defaultFormatted}, { ${namedImportsStr} } from ${quote}${source}${quote};`;
+      break;
     }
-
     case 'named': {
       // Sort identifiers using centralized sorting logic
       const sortedIdentifiers = sortIdentifiers(identifiers);
@@ -80,10 +83,13 @@ export function generateImportStatement(
       const namedImportsStr = sortedIdentifiers
         .map(id => formatIdentifier(id, suppressIndividualTypes))
         .join(', ');
-      return `import ${statementTypePrefix}{ ${namedImportsStr} } from ${quote}${source}${quote};`;
+      importStatement = `import ${statementTypePrefix}{ ${namedImportsStr} } from ${quote}${source}${quote};`;
+      break;
     }
-
     default:
       return importInfo.text;
   }
+
+  // Return the import statement without indentation
+  return importStatement;
 }

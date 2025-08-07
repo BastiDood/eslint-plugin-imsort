@@ -11,6 +11,7 @@ export function sortIdentifiers(
   identifiers: ImportIdentifier[],
 ): ImportIdentifier[] {
   return [...identifiers].sort((a, b) => {
+    // Sort all specifiers alphabetically, ignoring the type keyword for sorting purposes
     // Special case: if both identifiers start with the same letter but different cases, prioritize uppercase
     const [aFirst] = a.imported;
     const [bFirst] = b.imported;
