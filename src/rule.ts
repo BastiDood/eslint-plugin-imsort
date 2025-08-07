@@ -1,5 +1,5 @@
 import { enumerate } from 'itertools';
-import type { ImportDeclaration, Program, SourceLocation } from 'estree';
+import type { ImportDeclaration, Program } from 'estree';
 import type { Rule } from 'eslint';
 
 import type { ImportNode } from './types.ts';
@@ -10,25 +10,6 @@ import { extractImportInfo } from './utils/extract-import-info.ts';
 import { generateImportStatement } from './utils/generate-import-statement.ts';
 import { getImportGroupPriority } from './utils/get-import-group-priority.ts';
 import { sortImportsInGroup } from './utils/sort-imports-in-group.ts';
-
-// Svelte-specific AST node types
-interface SvelteScriptElement {
-  type: 'SvelteScriptElement';
-  body: ImportDeclaration[];
-  range?: [number, number];
-}
-
-interface SvelteProgram {
-  type: 'SvelteProgram';
-  body: SvelteScriptElement[];
-  range?: [number, number];
-  loc?: SourceLocation | null;
-}
-
-type ProgramNode = Program | SvelteProgram;
-
-type ProgramBodyItem = Program['body'][number];
-type ProgramBodyWithSvelte = (ProgramBodyItem | SvelteScriptElement)[];
 
 interface ImportDeclarationWithRange extends ImportDeclaration {
   range: [number, number];
@@ -82,72 +63,6 @@ function hasBlankLineBetween(
   return newlineCount >= 2;
 }
 
-/** Extract import declarations from a node, handling Svelte script blocks */
-function extractImportDeclarations(node: ProgramNode): ImportDeclaration[] {
-  const imports: ImportDeclaration[] = [];
-
-  switch (node.type) {
-    case 'Program': {
-      // For Svelte files, the body may contain SvelteScriptElement nodes
-      const body = node.body as unknown as ProgramBodyWithSvelte;
-      for (const statement of body)
-        switch (statement.type) {
-          case 'ImportDeclaration':
-            imports.push(statement);
-            break;
-          case 'SvelteScriptElement': {
-            // Svelte script blocks have their imports directly in the body array
-            // We need to sort them by their position in the source to preserve order
-            const scriptImports = statement.body
-              .filter(
-                (scriptItem): scriptItem is ImportDeclaration =>
-                  scriptItem.type === 'ImportDeclaration',
-              )
-              .sort((a: ImportDeclaration, b: ImportDeclaration) => {
-                assertHasRange(a);
-                assertHasRange(b);
-                return a.range[0] - b.range[0];
-              });
-            imports.push(...scriptImports);
-            break;
-          }
-          default:
-            break;
-        }
-      break;
-    }
-    case 'SvelteProgram': {
-      // For Svelte files, the body contains SvelteScriptElement nodes
-      for (const statement of node.body)
-        switch (statement.type) {
-          case 'SvelteScriptElement': {
-            // Svelte script blocks have their imports directly in the body array
-            // We need to sort them by their position in the source to preserve order
-            const scriptImports = statement.body
-              .filter(
-                (scriptItem): scriptItem is ImportDeclaration =>
-                  scriptItem.type === 'ImportDeclaration',
-              )
-              .sort((a: ImportDeclaration, b: ImportDeclaration) => {
-                assertHasRange(a);
-                assertHasRange(b);
-                return a.range[0] - b.range[0];
-              });
-            imports.push(...scriptImports);
-            break;
-          }
-          default:
-            break;
-        }
-      break;
-    }
-    default:
-      break;
-  }
-
-  return imports;
-}
-
 /** Extract indentation from the source text around an import (preserve exactly) */
 function extractIndentation(
   sourceText: string,
@@ -178,35 +93,36 @@ export const sortImports: Rule.RuleModule = {
   },
   create(context: Rule.RuleContext) {
     const text = context.sourceCode.getText();
+    const importData: {
+      node: ImportDeclaration;
+      info: ImportNode;
+      indentation: string;
+    }[] = [];
+
     return {
-      Program(node: Program) {
-        // Extract import declarations, handling both standard and Svelte files
-        const importDeclarations = extractImportDeclarations(
-          node as ProgramNode,
-        );
-
-        // Collect import declarations and their parsed info in a single pass
-        const importData: {
-          node: ImportDeclaration;
-          info: ImportNode;
-          indentation: string;
-        }[] = [];
-
-        for (const statement of importDeclarations) {
-          const importInfo = extractImportInfo(statement, text);
-          assertHasRange(statement);
-          const indentation = extractIndentation(text, statement.range);
-          importData.push({ node: statement, info: importInfo, indentation });
-        }
-
+      // Collect all ImportDeclaration nodes regardless of AST shape
+      ImportDeclaration(node: ImportDeclaration) {
+        const importInfo = extractImportInfo(node, text);
+        assertHasRange(node);
+        const indentation = extractIndentation(text, node.range);
+        importData.push({ node, info: importInfo, indentation });
+      },
+      // After finishing traversal, process the collected imports
+      'Program:exit'(_node: Program) {
         if (importData.length === 0) return; // No imports to sort
 
-        const imports = importData.map(({ info }) => info);
-        const importNodes = importData.map(({ node }) => node);
+        // Ensure processing in source order
+        const orderedImportData = [...importData].sort((a, b) => {
+          assertHasRange(a.node);
+          assertHasRange(b.node);
+          return a.node.range[0] - b.node.range[0];
+        });
 
-        // Group imports by priority AND type-only
+        const imports = orderedImportData.map(({ info }) => info);
+        const importNodes = orderedImportData.map(({ node }) => node);
+
+        // Group imports by priority
         const groups = new Map<number, ImportNode[]>();
-
         for (const importInfo of imports) {
           const groupKey = getGroupKey(importInfo);
           const existingGroup = groups.get(groupKey);
@@ -215,30 +131,23 @@ export const sortImports: Rule.RuleModule = {
           else existingGroup.push(importInfo);
         }
 
-        // Sort groups by priority, then sort within each group
         const sortedGroups = Array.from(groups.entries())
           .sort(([a], [b]) => a - b)
           .map(([_, groupImports]) => sortImportsInGroup(groupImports));
 
-        // Generate the expected import order
         const expectedImports = sortedGroups.flat();
 
-        // Check if the current imports match the expected order
         let needsReordering = false;
 
-        // First, check if the number of imports matches
         if (imports.length === expectedImports.length)
-          // Compare each import with its expected counterpart
           for (const [i, importInfo] of enumerate(imports)) {
             if (typeof importInfo === 'undefined') continue;
 
-            // Check if identifiers are sorted within this import
             if (!areIdentifiersSorted(importInfo)) {
               needsReordering = true;
               break;
             }
 
-            // Check blank lines between groups (skip first import)
             if (i > 0) {
               const prevNode = importNodes[i - 1];
               const currentNode = importNodes[i];
@@ -262,10 +171,8 @@ export const sortImports: Rule.RuleModule = {
               }
             }
 
-            // Compare with expected import at the same position
             const expectedImport = expectedImports[i];
             if (typeof expectedImport !== 'undefined') {
-              // Compare the entire import structure
               if (
                 importInfo.source !== expectedImport.source ||
                 importInfo.type !== expectedImport.type ||
@@ -276,7 +183,6 @@ export const sortImports: Rule.RuleModule = {
                 break;
               }
 
-              // Compare each identifier to ensure they match exactly
               for (const [j, currentId] of enumerate(importInfo.identifiers)) {
                 const expectedId = expectedImport.identifiers[j];
                 if (
@@ -294,85 +200,78 @@ export const sortImports: Rule.RuleModule = {
           }
         else needsReordering = true;
 
-        if (needsReordering) {
-          const [firstImport] = importNodes;
-          const lastImport = importNodes[importNodes.length - 1];
+        if (!needsReordering) return;
 
-          if (
-            typeof firstImport === 'undefined' ||
-            typeof lastImport === 'undefined' ||
-            typeof firstImport.range === 'undefined' ||
-            typeof lastImport.range === 'undefined'
-          )
-            return;
+        const [firstImport] = importNodes;
+        const lastImport = importNodes[importNodes.length - 1];
 
-          context.report({
-            node: firstImport,
-            message:
-              'Imports should be sorted and grouped according to the specified rules',
-            fix(fixer) {
-              // Build maps to preserve original indentation per import
-              const indentationByKey = new Map<string, string>();
-              for (const { info, indentation } of importData) {
-                const key = `${info.source}:${info.type}:${info.identifiers
+        if (
+          typeof firstImport === 'undefined' ||
+          typeof lastImport === 'undefined' ||
+          typeof firstImport.range === 'undefined' ||
+          typeof lastImport.range === 'undefined'
+        )
+          return;
+
+        context.report({
+          node: firstImport,
+          message:
+            'Imports should be sorted and grouped according to the specified rules',
+          fix(fixer) {
+            const indentationByKey = new Map<string, string>();
+            for (const { info, indentation } of orderedImportData) {
+              const key = `${info.source}:${info.type}:${info.identifiers
+                .map(
+                  id =>
+                    `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
+                )
+                .join(',')}`;
+              indentationByKey.set(key, indentation);
+            }
+
+            const sortedStatements: string[] = [];
+            for (const [groupIndex, groupImports] of enumerate(sortedGroups)) {
+              if (groupIndex > 0) sortedStatements.push('');
+              for (const importInfo of groupImports) {
+                const key = `${importInfo.source}:${importInfo.type}:${importInfo.identifiers
                   .map(
                     id =>
                       `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
                   )
                   .join(',')}`;
-                indentationByKey.set(key, indentation);
+                const indentation = indentationByKey.get(key) ?? '';
+                const preferences = detectFormattingPreferences(
+                  text,
+                  importInfo.text,
+                );
+                const importStatement = generateImportStatement(
+                  importInfo,
+                  preferences,
+                );
+                sortedStatements.push(indentation + importStatement);
               }
+            }
 
-              // Generate sorted import statements preserving indentation, quote style, and brace spacing
-              const sortedStatements: string[] = [];
+            const replacement = sortedStatements.join('\n');
 
-              for (const [groupIndex, groupImports] of enumerate(
-                sortedGroups,
-              )) {
-                if (groupIndex > 0) sortedStatements.push('');
+            if (
+              typeof firstImport.range === 'undefined' ||
+              typeof lastImport.range === 'undefined'
+            )
+              return null;
 
-                for (const importInfo of groupImports) {
-                  const key = `${importInfo.source}:${importInfo.type}:${importInfo.identifiers
-                    .map(
-                      id =>
-                        `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
-                    )
-                    .join(',')}`;
-                  const indentation = indentationByKey.get(key) ?? '';
-                  const preferences = detectFormattingPreferences(
-                    text,
-                    importInfo.text,
-                  );
-                  const importStatement = generateImportStatement(
-                    importInfo,
-                    preferences,
-                  );
-                  sortedStatements.push(indentation + importStatement);
-                }
-              }
+            const firstImportLineStart =
+              text.lastIndexOf('\n', firstImport.range[0]) + 1;
+            const lastImportLineEnd = text.indexOf('\n', lastImport.range[1]);
+            const lastImportEnd =
+              lastImportLineEnd === -1 ? text.length : lastImportLineEnd;
 
-              const replacement = sortedStatements.join('\n');
-
-              if (
-                typeof firstImport.range === 'undefined' ||
-                typeof lastImport.range === 'undefined'
-              )
-                return null;
-
-              // Find the start of the first import line to avoid including original indentation
-              const firstImportLineStart =
-                text.lastIndexOf('\n', firstImport.range[0]) + 1;
-              const lastImportLineEnd = text.indexOf('\n', lastImport.range[1]);
-              const lastImportEnd =
-                lastImportLineEnd === -1 ? text.length : lastImportLineEnd;
-
-              return fixer.replaceTextRange(
-                [firstImportLineStart, lastImportEnd],
-                replacement,
-              );
-            },
-          });
-        }
+            return fixer.replaceTextRange(
+              [firstImportLineStart, lastImportEnd],
+              replacement,
+            );
+          },
+        });
       },
     };
   },
