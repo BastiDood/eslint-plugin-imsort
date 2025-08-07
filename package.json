@@ -7,7 +7,7 @@
     "dist/index.js"
   ],
   "exports": "./dist/index.js",
-  "packageManager": "pnpm@10.14.0-0+sha512.2cd47a0cbf5f1d1de7693a88307a0ede5be94e0d3b34853d800ee775efbea0650cb562b77605ec80bc8d925f5cd27c4dfe8bb04d3a0b76090784c664450d32d6",
+  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -35,13 +35,13 @@
     "@eslint/js": "^9.32.0",
     "@types/eslint": "^9.6.1",
     "@types/estree": "^1.0.8",
-    "@typescript-eslint/parser": "^8.38.0",
+    "@typescript-eslint/parser": "^8.39.0",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-vitest-rule-tester": "^2.2.0",
+    "eslint-vitest-rule-tester": "^2.2.1",
     "prettier": "^3.6.2",
     "tsup": "^8.5.0",
-    "typescript-eslint": "^8.38.0",
+    "typescript-eslint": "^8.39.0",
     "vitest": "^3.2.4"
   },
   "dependencies": {
