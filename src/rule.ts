@@ -22,6 +22,32 @@ function assertHasRange(
     throw new Error('AST nodes must have range information');
 }
 
+/** Find the nearest ancestor whose parent is Program; use its range start as a block key */
+function getTopLevelContainerKey(
+  node: ImportDeclaration,
+  sourceCode: Rule.RuleContext['sourceCode'],
+): number {
+  // Ancestors are ordered from nearest parent to the root
+  const ancestors = sourceCode.getAncestors(node) as {
+    range?: [number, number];
+    parent?: { type?: string } | null | undefined;
+  }[];
+
+  let containerKey = -1;
+
+  for (const anc of ancestors) {
+    const parent = anc?.parent;
+    if (
+      typeof parent !== 'undefined' &&
+      parent !== null &&
+      parent.type === 'Program'
+    )
+      if (typeof anc.range !== 'undefined') [containerKey] = anc.range;
+  }
+
+  return containerKey;
+}
+
 /** Check if identifiers within an import are sorted */
 function areIdentifiersSorted(importInfo: ImportNode): boolean {
   switch (importInfo.type) {
@@ -111,17 +137,6 @@ export const sortImports: Rule.RuleModule = {
       'Program:exit'(_node: Program) {
         if (importData.length === 0) return; // No imports to sort
 
-        // Helper to compute a block key (Svelte <script> block start) for a given position
-        function getSvelteScriptBlockKey(position: number): number {
-          const openStart = text.lastIndexOf('<script', position);
-          if (openStart === -1) return -1; // Non-svelte or outside any script block
-          const openEnd = text.indexOf('>', openStart);
-          if (openEnd === -1 || openEnd > position) return -1;
-          const closeIdx = text.indexOf('</script>', openEnd);
-          if (closeIdx !== -1 && closeIdx < position) return -1; // Closed before position
-          return openStart;
-        }
-
         // Ensure processing in source order
         const orderedImportData = [...importData].sort((a, b) => {
           assertHasRange(a.node);
@@ -129,11 +144,14 @@ export const sortImports: Rule.RuleModule = {
           return a.node.range[0] - b.node.range[0];
         });
 
-        // Group imports by their containing Svelte <script> block (or -1 for normal files)
+        // Group imports by their nearest child-of-Program ancestor (or -1 for direct children)
         const importsByBlock = new Map<number, typeof importData>();
         for (const item of orderedImportData) {
           assertHasRange(item.node);
-          const blockKey = getSvelteScriptBlockKey(item.node.range[0]);
+          const blockKey = getTopLevelContainerKey(
+            item.node,
+            context.sourceCode,
+          );
           const arr = importsByBlock.get(blockKey);
           if (typeof arr === 'undefined') importsByBlock.set(blockKey, [item]);
           else arr.push(item);
