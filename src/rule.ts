@@ -111,6 +111,17 @@ export const sortImports: Rule.RuleModule = {
       'Program:exit'(_node: Program) {
         if (importData.length === 0) return; // No imports to sort
 
+        // Helper to compute a block key (Svelte <script> block start) for a given position
+        function getSvelteScriptBlockKey(position: number): number {
+          const openStart = text.lastIndexOf('<script', position);
+          if (openStart === -1) return -1; // Non-svelte or outside any script block
+          const openEnd = text.indexOf('>', openStart);
+          if (openEnd === -1 || openEnd > position) return -1;
+          const closeIdx = text.indexOf('</script>', openEnd);
+          if (closeIdx !== -1 && closeIdx < position) return -1; // Closed before position
+          return openStart;
+        }
+
         // Ensure processing in source order
         const orderedImportData = [...importData].sort((a, b) => {
           assertHasRange(a.node);
@@ -118,158 +129,210 @@ export const sortImports: Rule.RuleModule = {
           return a.node.range[0] - b.node.range[0];
         });
 
-        const imports = orderedImportData.map(({ info }) => info);
-        const importNodes = orderedImportData.map(({ node }) => node);
-
-        // Group imports by priority
-        const groups = new Map<number, ImportNode[]>();
-        for (const importInfo of imports) {
-          const groupKey = getGroupKey(importInfo);
-          const existingGroup = groups.get(groupKey);
-          if (typeof existingGroup === 'undefined')
-            groups.set(groupKey, [importInfo]);
-          else existingGroup.push(importInfo);
+        // Group imports by their containing Svelte <script> block (or -1 for normal files)
+        const importsByBlock = new Map<number, typeof importData>();
+        for (const item of orderedImportData) {
+          assertHasRange(item.node);
+          const blockKey = getSvelteScriptBlockKey(item.node.range[0]);
+          const arr = importsByBlock.get(blockKey);
+          if (typeof arr === 'undefined') importsByBlock.set(blockKey, [item]);
+          else arr.push(item);
         }
 
-        const sortedGroups = Array.from(groups.entries())
-          .sort(([a], [b]) => a - b)
-          .map(([_, groupImports]) => sortImportsInGroup(groupImports));
-
-        const expectedImports = sortedGroups.flat();
+        function computeExpected(imports: ImportNode[]) {
+          const groups = new Map<number, ImportNode[]>();
+          for (const importInfo of imports) {
+            const groupKey = getGroupKey(importInfo);
+            const existingGroup = groups.get(groupKey);
+            if (typeof existingGroup === 'undefined')
+              groups.set(groupKey, [importInfo]);
+            else existingGroup.push(importInfo);
+          }
+          const sortedGroups = Array.from(groups.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([_, groupImports]) => sortImportsInGroup(groupImports));
+          return {
+            expectedImports: sortedGroups.flat(),
+            sortedGroups,
+          } as const;
+        }
 
         let needsReordering = false;
+        const blockFixData: {
+          blockKey: number;
+          firstImport: ImportDeclaration;
+          lastImport: ImportDeclaration;
+          sortedGroups: ImportNode[][];
+          orderedItems: typeof importData;
+        }[] = [];
 
-        if (imports.length === expectedImports.length)
-          for (const [i, importInfo] of enumerate(imports)) {
-            if (typeof importInfo === 'undefined') continue;
+        for (const [blockKey, items] of importsByBlock.entries()) {
+          const imports = items.map(({ info }) => info);
+          const importNodes = items.map(({ node }) => node);
+          const { expectedImports, sortedGroups } = computeExpected(imports);
 
-            if (!areIdentifiersSorted(importInfo)) {
-              needsReordering = true;
-              break;
-            }
+          let needsBlock = false;
 
-            if (i > 0) {
-              const prevNode = importNodes[i - 1];
-              const currentNode = importNodes[i];
-              const prevImportInfo = imports[i - 1];
+          if (imports.length === expectedImports.length)
+            for (const [i, importInfo] of enumerate(imports)) {
+              if (typeof importInfo === 'undefined') continue;
 
-              if (
-                typeof prevNode !== 'undefined' &&
-                typeof currentNode !== 'undefined' &&
-                typeof prevImportInfo !== 'undefined'
-              ) {
-                const currentGroupKey = getGroupKey(importInfo);
-                const prevGroupKey = getGroupKey(prevImportInfo);
-
-                if (
-                  currentGroupKey !== prevGroupKey &&
-                  !hasBlankLineBetween(prevNode, currentNode, text)
-                ) {
-                  needsReordering = true;
-                  break;
-                }
-              }
-            }
-
-            const expectedImport = expectedImports[i];
-            if (typeof expectedImport !== 'undefined') {
-              if (
-                importInfo.source !== expectedImport.source ||
-                importInfo.type !== expectedImport.type ||
-                importInfo.identifiers.length !==
-                  expectedImport.identifiers.length
-              ) {
-                needsReordering = true;
+              if (!areIdentifiersSorted(importInfo)) {
+                needsBlock = true;
                 break;
               }
 
-              for (const [j, currentId] of enumerate(importInfo.identifiers)) {
-                const expectedId = expectedImport.identifiers[j];
+              if (i > 0) {
+                const prevNode = importNodes[i - 1];
+                const currentNode = importNodes[i];
+                const prevImportInfo = imports[i - 1];
+
                 if (
-                  typeof expectedId === 'undefined' ||
-                  currentId.imported !== expectedId.imported ||
-                  (currentId.isTypeOnly ?? false) !==
-                    (expectedId.isTypeOnly ?? false)
+                  typeof prevNode !== 'undefined' &&
+                  typeof currentNode !== 'undefined' &&
+                  typeof prevImportInfo !== 'undefined'
                 ) {
-                  needsReordering = true;
-                  break;
+                  const currentGroupKey = getGroupKey(importInfo);
+                  const prevGroupKey = getGroupKey(prevImportInfo);
+
+                  if (
+                    currentGroupKey !== prevGroupKey &&
+                    !hasBlankLineBetween(prevNode, currentNode, text)
+                  ) {
+                    needsBlock = true;
+                    break;
+                  }
                 }
               }
-              if (needsReordering) break;
+
+              const expectedImport = expectedImports[i];
+              if (typeof expectedImport !== 'undefined') {
+                if (
+                  importInfo.source !== expectedImport.source ||
+                  importInfo.type !== expectedImport.type ||
+                  importInfo.identifiers.length !==
+                    expectedImport.identifiers.length
+                ) {
+                  needsBlock = true;
+                  break;
+                }
+
+                for (const [j, currentId] of enumerate(
+                  importInfo.identifiers,
+                )) {
+                  const expectedId = expectedImport.identifiers[j];
+                  if (
+                    typeof expectedId === 'undefined' ||
+                    currentId.imported !== expectedId.imported ||
+                    (currentId.isTypeOnly ?? false) !==
+                      (expectedId.isTypeOnly ?? false)
+                  ) {
+                    needsBlock = true;
+                    break;
+                  }
+                }
+                if (needsBlock) break;
+              }
             }
+          else needsBlock = true;
+
+          if (needsBlock) {
+            needsReordering = true;
+            const [firstImport] = importNodes;
+            const lastImport = importNodes[importNodes.length - 1];
+            if (
+              typeof firstImport !== 'undefined' &&
+              typeof lastImport !== 'undefined'
+            )
+              blockFixData.push({
+                blockKey,
+                firstImport,
+                lastImport,
+                sortedGroups,
+                orderedItems: items,
+              });
           }
-        else needsReordering = true;
+        }
 
         if (!needsReordering) return;
 
-        const [firstImport] = importNodes;
-        const lastImport = importNodes[importNodes.length - 1];
-
-        if (
-          typeof firstImport === 'undefined' ||
-          typeof lastImport === 'undefined' ||
-          typeof firstImport.range === 'undefined' ||
-          typeof lastImport.range === 'undefined'
-        )
-          return;
+        // Report on the first import of the first block that needs fixing
+        const [firstBlock] = blockFixData.sort(
+          (a, b) =>
+            (a.firstImport.range?.[0] ?? 0) - (b.firstImport.range?.[0] ?? 0),
+        );
+        if (typeof firstBlock === 'undefined') return;
 
         context.report({
-          node: firstImport,
+          node: firstBlock.firstImport,
           message:
             'Imports should be sorted and grouped according to the specified rules',
           fix(fixer) {
-            const indentationByKey = new Map<string, string>();
-            for (const { info, indentation } of orderedImportData) {
-              const key = `${info.source}:${info.type}:${info.identifiers
-                .map(
-                  id =>
-                    `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
-                )
-                .join(',')}`;
-              indentationByKey.set(key, indentation);
-            }
+            const fixes: ReturnType<typeof fixer.replaceTextRange>[] = [];
 
-            const sortedStatements: string[] = [];
-            for (const [groupIndex, groupImports] of enumerate(sortedGroups)) {
-              if (groupIndex > 0) sortedStatements.push('');
-              for (const importInfo of groupImports) {
-                const key = `${importInfo.source}:${importInfo.type}:${importInfo.identifiers
+            for (const block of blockFixData) {
+              const indentationByKey = new Map<string, string>();
+              for (const { info, indentation } of block.orderedItems) {
+                const key = `${info.source}:${info.type}:${info.identifiers
                   .map(
                     id =>
                       `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
                   )
                   .join(',')}`;
-                const indentation = indentationByKey.get(key) ?? '';
-                const preferences = detectFormattingPreferences(
-                  text,
-                  importInfo.text,
-                );
-                const importStatement = generateImportStatement(
-                  importInfo,
-                  preferences,
-                );
-                sortedStatements.push(indentation + importStatement);
+                if (!indentationByKey.has(key))
+                  indentationByKey.set(key, indentation);
               }
+
+              const sortedStatements: string[] = [];
+              for (const [groupIndex, groupImports] of enumerate(
+                block.sortedGroups,
+              )) {
+                if (groupIndex > 0) sortedStatements.push('');
+                for (const importInfo of groupImports) {
+                  const key = `${importInfo.source}:${importInfo.type}:${importInfo.identifiers
+                    .map(
+                      id =>
+                        `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
+                    )
+                    .join(',')}`;
+                  const indentation = indentationByKey.get(key) ?? '';
+                  const preferences = detectFormattingPreferences(
+                    text,
+                    importInfo.text,
+                  );
+                  const importStatement = generateImportStatement(
+                    importInfo,
+                    preferences,
+                  );
+                  sortedStatements.push(indentation + importStatement);
+                }
+              }
+
+              if (
+                typeof block.firstImport.range === 'undefined' ||
+                typeof block.lastImport.range === 'undefined'
+              )
+                continue;
+
+              const replacement = sortedStatements.join('\n');
+              const firstImportLineStart =
+                text.lastIndexOf('\n', block.firstImport.range[0]) + 1;
+              const lastImportLineEnd = text.indexOf(
+                '\n',
+                block.lastImport.range[1],
+              );
+              const lastImportEnd =
+                lastImportLineEnd === -1 ? text.length : lastImportLineEnd;
+
+              fixes.push(
+                fixer.replaceTextRange(
+                  [firstImportLineStart, lastImportEnd],
+                  replacement,
+                ),
+              );
             }
 
-            const replacement = sortedStatements.join('\n');
-
-            if (
-              typeof firstImport.range === 'undefined' ||
-              typeof lastImport.range === 'undefined'
-            )
-              return null;
-
-            const firstImportLineStart =
-              text.lastIndexOf('\n', firstImport.range[0]) + 1;
-            const lastImportLineEnd = text.indexOf('\n', lastImport.range[1]);
-            const lastImportEnd =
-              lastImportLineEnd === -1 ? text.length : lastImportLineEnd;
-
-            return fixer.replaceTextRange(
-              [firstImportLineStart, lastImportEnd],
-              replacement,
-            );
+            return fixes;
           },
         });
       },

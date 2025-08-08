@@ -455,10 +455,232 @@ describe('imsort/sort-imports - Svelte files', () => {
   onMount(() => {
     console.log('Component mounted');
   });
+
 </script>
 
 <div>Hello</div>
       `);
+    });
+
+    describe('Svelte script blocks - context="module"', () => {
+      it('should handle single module context script block (JS)', () => {
+        valid(`
+<script context="module">
+  import { readFile } from 'node:fs/promises';
+
+  import { Component } from 'react';
+
+  import { helper } from './helper';
+</script>
+
+<div>Hello</div>
+      `);
+      });
+
+      it('should sort imports inside module context script block (JS)', () => {
+        invalid({
+          code: `
+<script context="module">
+  import { helper } from './helper';
+  import { Component } from 'react';
+  import { readFile } from 'node:fs/promises';
+</script>
+
+<div>Hello</div>
+        `,
+          errors: 1,
+          output: `
+<script context="module">
+  import { readFile } from 'node:fs/promises';
+
+  import { Component } from 'react';
+
+  import { helper } from './helper';
+</script>
+
+<div>Hello</div>
+        `,
+        });
+      });
+
+      it('should handle TypeScript in module context with lang="ts"', () => {
+        valid(`
+<script context="module" lang="ts">
+  import { Component } from 'react';
+  import type { Config } from 'eslint';
+
+  import { helper, type User } from './types';
+</script>
+
+<div>Hello</div>
+      `);
+      });
+
+      it('should sort imports inside module context script block (TS)', () => {
+        invalid({
+          code: `
+<script context="module" lang="ts">
+  import { helper, type User } from './types';
+  import type { Config } from 'eslint';
+  import { Component } from 'react';
+</script>
+
+<div>Hello</div>
+        `,
+          errors: 1,
+          output: `
+<script context="module" lang="ts">
+  import { Component } from 'react';
+  import type { Config } from 'eslint';
+
+  import { helper, type User } from './types';
+</script>
+
+<div>Hello</div>
+        `,
+        });
+      });
+
+      it('should handle both module and instance script blocks (JS + JS)', () => {
+        valid(`
+<script context="module">
+  import { Component } from 'react';
+  import { onMount } from 'svelte';
+</script>
+
+<script>
+  import { utils } from '@/utils';
+
+  import { helper } from './helper';
+</script>
+
+<div>Hello</div>
+      `);
+      });
+
+      it('should sort each script block independently (JS + JS)', () => {
+        invalid({
+          code: `
+<script context="module">
+  import { Component } from 'react';
+  import { onMount } from 'svelte';
+</script>
+
+<script>
+  import { utils } from '@/utils';
+  import { helper } from './helper';
+</script>
+
+<div>Hello</div>
+        `,
+          errors: 1,
+          output: `
+<script context="module">
+  import { Component } from 'react';
+  import { onMount } from 'svelte';
+</script>
+
+<script>
+  import { utils } from '@/utils';
+
+  import { helper } from './helper';
+</script>
+
+<div>Hello</div>
+        `,
+        });
+      });
+
+      it('should sort each script block independently (TS module + TS instance)', () => {
+        invalid({
+          code: `
+<script context="module" lang="ts">
+  import { stores } from '$app/stores';
+  import { readFile } from 'node:fs/promises';
+  import { Component } from 'react';
+</script>
+
+<script lang="ts">
+  import { helper, type User } from './types';
+  import type { Config } from 'eslint';
+  import { database } from '$lib/server/database';
+</script>
+
+<div>Hello</div>
+        `,
+          errors: 1,
+          output: `
+<script context="module" lang="ts">
+  import { readFile } from 'node:fs/promises';
+
+  import { Component } from 'react';
+
+  import { stores } from '$app/stores';
+</script>
+
+<script lang="ts">
+  import type { Config } from 'eslint';
+
+  import { database } from '$lib/server/database';
+
+  import { helper, type User } from './types';
+</script>
+
+<div>Hello</div>
+        `,
+        });
+      });
+
+      it('should handle TS module + JS instance', () => {
+        invalid({
+          code: `
+<script context="module" lang="ts">
+  import { aliased } from '@/aliased';
+  import { readFile } from 'node:fs/promises';
+</script>
+
+<script>
+  import { helper } from './helper';
+  import { Component } from 'react';
+</script>
+
+<div>Hello</div>
+        `,
+          errors: 1,
+          output: `
+<script context="module" lang="ts">
+  import { readFile } from 'node:fs/promises';
+
+  import { aliased } from '@/aliased';
+</script>
+
+<script>
+  import { Component } from 'react';
+
+  import { helper } from './helper';
+</script>
+
+<div>Hello</div>
+        `,
+        });
+      });
+
+      it('should handle JS module + TS instance', () => {
+        valid(`
+<script context="module">
+  import { Component } from 'react';
+  import { lodash } from 'lodash';
+</script>
+
+<script lang="ts">
+  import { stores } from '$app/stores';
+
+  import { helper } from './helper';
+</script>
+
+<div>Hello</div>
+      `);
+      });
     });
 
     it('should handle script block with multiple reactive statements', () => {
