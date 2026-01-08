@@ -1,2 +1,15 @@
+blockExoticSubdeps: true
+
+cleanupUnusedCatalogs: true
+
+engineStrict: true
+
 onlyBuiltDependencies:
   - esbuild
+
+strictDepBuilds: true
+
+trustPolicy: no-downgrade
+
+trustPolicyExclude:
+  - chokidar@4.0.3
