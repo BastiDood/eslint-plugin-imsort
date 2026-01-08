@@ -6,25 +6,25 @@ describe('detectFormattingPreferences', () => {
   describe('quote style detection', () => {
     it('should detect single quotes from import text', () => {
       const importText = "import { Component } from 'react';";
-      const preferences = detectFormattingPreferences('', importText);
+      const preferences = detectFormattingPreferences(importText);
       expect(preferences.useSingleQuotes).toBe(true);
     });
 
     it('should detect double quotes from import text', () => {
       const importText = 'import { Component } from "react";';
-      const preferences = detectFormattingPreferences('', importText);
+      const preferences = detectFormattingPreferences(importText);
       expect(preferences.useSingleQuotes).toBe(false);
     });
 
     it('should default to single quotes when no import text provided', () => {
-      const preferences = detectFormattingPreferences('');
+      const preferences = detectFormattingPreferences();
       expect(preferences.useSingleQuotes).toBe(true);
     });
 
     it('should default to single quotes when import text has no clear preference', () => {
       const importText =
         'import { Component } from "react"; import { Other } from \'other\';';
-      const preferences = detectFormattingPreferences('', importText);
+      const preferences = detectFormattingPreferences(importText);
       expect(preferences.useSingleQuotes).toBe(true);
     });
   });
@@ -32,13 +32,13 @@ describe('detectFormattingPreferences', () => {
   describe('trailing comma detection', () => {
     it('should always return false for trailing commas', () => {
       const importText = "import { useState, useEffect, } from 'react';";
-      const preferences = detectFormattingPreferences('', importText);
+      const preferences = detectFormattingPreferences(importText);
       expect(preferences.useTrailingComma).toBe(false);
     });
 
     it('should always return false for trailing commas even with mixed formatting', () => {
       const importText = "import { useState, useEffect } from 'react';";
-      const preferences = detectFormattingPreferences('', importText);
+      const preferences = detectFormattingPreferences(importText);
       expect(preferences.useTrailingComma).toBe(false);
     });
   });

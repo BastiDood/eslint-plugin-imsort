@@ -38,18 +38,18 @@ function createMockNode(
   };
 }
 
-function createImportSpecifier(name: string, local?: string): ImportSpecifier {
+function createImportSpecifier(name: string, local?: string) {
   return {
-    type: 'ImportSpecifier',
-    imported: { type: 'Identifier', name },
-    local: { type: 'Identifier', name: local ?? name },
+    type: 'ImportSpecifier' as const,
+    imported: { type: 'Identifier' as const, name },
+    local: { type: 'Identifier' as const, name: local ?? name },
   };
 }
 
-function createDefaultSpecifier(name: string): ImportDefaultSpecifier {
+function createDefaultSpecifier(name: string) {
   return {
-    type: 'ImportDefaultSpecifier',
-    local: { type: 'Identifier', name },
+    type: 'ImportDefaultSpecifier' as const,
+    local: { type: 'Identifier' as const, name },
   };
 }
 

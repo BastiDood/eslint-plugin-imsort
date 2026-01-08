@@ -7,9 +7,7 @@ import type { ImportIdentifier } from '../types.ts';
  * - Case-insensitive alphabetical sorting
  * - Consistent behavior across all import types
  */
-export function sortIdentifiers(
-  identifiers: ImportIdentifier[],
-): ImportIdentifier[] {
+export function sortIdentifiers(identifiers: ImportIdentifier[]) {
   return [...identifiers].sort((a, b) => {
     // Sort all specifiers alphabetically, ignoring the type keyword for sorting purposes
     // Special case: if both identifiers start with the same letter but different cases, prioritize uppercase
@@ -42,7 +40,7 @@ export function sortIdentifiers(
  * Check if identifiers are already sorted according to the sorting rules.
  * This function uses the same sorting logic as `sortIdentifiers` to ensure consistency.
  */
-export function areIdentifiersSorted(identifiers: ImportIdentifier[]): boolean {
+export function areIdentifiersSorted(identifiers: ImportIdentifier[]) {
   if (identifiers.length <= 1) return true;
 
   const sorted = sortIdentifiers(identifiers);

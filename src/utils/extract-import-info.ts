@@ -1,6 +1,23 @@
 import type { ImportDeclaration } from 'estree';
 
-import type { ImportIdentifier, ImportNode, ImportType } from '../types.ts';
+import type { ImportIdentifier, ImportType } from '../types.ts';
+
+/** Creates an ImportIdentifier with optional local alias and type-only flag */
+function createIdentifier(
+  imported: string,
+  local: string | undefined,
+  isTypeOnly: boolean,
+  individualTypeSpecifiers: Set<string>,
+) {
+  const identifier: ImportIdentifier = { imported };
+  if (typeof local !== 'undefined' && local !== imported)
+    identifier.local = local;
+
+  if (isTypeOnly || individualTypeSpecifiers.has(imported))
+    identifier.isTypeOnly = true;
+
+  return identifier;
+}
 
 /**
  * Parses individual type specifiers from import statement text
@@ -32,10 +49,7 @@ function parseIndividualTypeSpecifiers(text: string): Set<string> {
 }
 
 /** Extracts import information from an import declaration node */
-export function extractImportInfo(
-  node: ImportDeclaration,
-  sourceText: string,
-): ImportNode {
+export function extractImportInfo(node: ImportDeclaration, sourceText: string) {
   if (typeof node.source.value !== 'string')
     throw new Error('Import source must be a string');
 
@@ -76,15 +90,15 @@ export function extractImportInfo(
     const namespaceSpec = node.specifiers.find(
       spec => spec.type === 'ImportNamespaceSpecifier',
     );
-    if (namespaceSpec && namespaceSpec.type === 'ImportNamespaceSpecifier') {
-      const identifier: ImportIdentifier = {
-        imported: namespaceSpec.local.name,
-      };
-      if (isTypeOnly || individualTypeSpecifiers.has(namespaceSpec.local.name))
-        identifier.isTypeOnly = true;
-
-      identifiers.push(identifier);
-    }
+    if (namespaceSpec && namespaceSpec.type === 'ImportNamespaceSpecifier')
+      identifiers.push(
+        createIdentifier(
+          namespaceSpec.local.name,
+          void 0,
+          isTypeOnly,
+          individualTypeSpecifiers,
+        ),
+      );
   } else if (
     node.specifiers.some(spec => spec.type === 'ImportDefaultSpecifier')
   ) {
@@ -93,15 +107,15 @@ export function extractImportInfo(
     const defaultSpec = node.specifiers.find(
       spec => spec.type === 'ImportDefaultSpecifier',
     );
-    if (defaultSpec && defaultSpec.type === 'ImportDefaultSpecifier') {
-      const identifier: ImportIdentifier = {
-        imported: defaultSpec.local.name,
-      };
-      if (isTypeOnly || individualTypeSpecifiers.has(defaultSpec.local.name))
-        identifier.isTypeOnly = true;
-
-      identifiers.push(identifier);
-    }
+    if (defaultSpec && defaultSpec.type === 'ImportDefaultSpecifier')
+      identifiers.push(
+        createIdentifier(
+          defaultSpec.local.name,
+          void 0,
+          isTypeOnly,
+          individualTypeSpecifiers,
+        ),
+      );
 
     // Add named imports after default
     const namedSpecs = node.specifiers.filter(
@@ -111,23 +125,15 @@ export function extractImportInfo(
       if (
         spec.type === 'ImportSpecifier' &&
         spec.imported.type === 'Identifier'
-      ) {
-        const imported = spec.imported.name;
-        const local = spec.local.name;
-        const identifier: ImportIdentifier = {
-          imported,
-        };
-        if (imported !== local) identifier.local = local;
-
-        // Check if this specific specifier is type-only
-        // For mixed imports, we need to rely on text parsing since TypeScript parser
-        // doesn't set importKind on individual specifiers
-        const specifierIsTypeOnly = individualTypeSpecifiers.has(imported);
-
-        if (isTypeOnly || specifierIsTypeOnly) identifier.isTypeOnly = true;
-
-        identifiers.push(identifier);
-      }
+      )
+        identifiers.push(
+          createIdentifier(
+            spec.imported.name,
+            spec.local.name,
+            isTypeOnly,
+            individualTypeSpecifiers,
+          ),
+        );
   } else {
     // Named imports only: import { a, b } from 'module'
     type = 'named';
@@ -138,23 +144,15 @@ export function extractImportInfo(
       if (
         spec.type === 'ImportSpecifier' &&
         spec.imported.type === 'Identifier'
-      ) {
-        const imported = spec.imported.name;
-        const local = spec.local.name;
-        const identifier: ImportIdentifier = {
-          imported,
-        };
-        if (imported !== local) identifier.local = local;
-
-        // Check if this specific specifier is type-only
-        // For mixed imports, we need to rely on text parsing since TypeScript parser
-        // doesn't set importKind on individual specifiers
-        const specifierIsTypeOnly = individualTypeSpecifiers.has(imported);
-
-        if (isTypeOnly || specifierIsTypeOnly) identifier.isTypeOnly = true;
-
-        identifiers.push(identifier);
-      }
+      )
+        identifiers.push(
+          createIdentifier(
+            spec.imported.name,
+            spec.local.name,
+            isTypeOnly,
+            individualTypeSpecifiers,
+          ),
+        );
   }
 
   return {

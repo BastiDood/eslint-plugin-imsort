@@ -4,11 +4,13 @@ import type { Rule } from 'eslint';
 
 import type { ImportNode } from './types.ts';
 
+import { areIdentifiersEqual, getGroupKey } from './utils/compare.ts';
 import { areIdentifiersSorted as areIdentifiersSortedArray } from './utils/sort.ts';
+import { classifyImportGroup } from './utils/classify-import-group.ts';
 import { detectFormattingPreferences } from './utils/detect-formatting-preferences.ts';
 import { extractImportInfo } from './utils/extract-import-info.ts';
+import { generateImportKey } from './utils/import-key.ts';
 import { generateImportStatement } from './utils/generate-import-statement.ts';
-import { getImportGroupPriority } from './utils/get-import-group-priority.ts';
 import { sortImportsInGroup } from './utils/sort-imports-in-group.ts';
 
 interface ImportDeclarationWithRange extends ImportDeclaration {
@@ -26,30 +28,29 @@ function assertHasRange(
 function getTopLevelContainerKey(
   node: ImportDeclaration,
   sourceCode: Rule.RuleContext['sourceCode'],
-): number {
+) {
   // Ancestors are ordered from nearest parent to the root
-  const ancestors = sourceCode.getAncestors(node) as {
-    range?: [number, number];
-    parent?: { type?: string } | null | undefined;
-  }[];
+  const ancestors = sourceCode.getAncestors(node);
 
   let containerKey = -1;
-
   for (const anc of ancestors) {
-    const parent = anc?.parent;
+    if (!('parent' in anc) || !('range' in anc)) continue;
+    const { parent, range } = anc;
     if (
-      typeof parent !== 'undefined' &&
+      typeof parent === 'object' &&
       parent !== null &&
-      parent.type === 'Program'
+      'type' in parent &&
+      parent.type === 'Program' &&
+      typeof range !== 'undefined'
     )
-      if (typeof anc.range !== 'undefined') [containerKey] = anc.range;
+      [containerKey] = range;
   }
 
   return containerKey;
 }
 
 /** Check if identifiers within an import are sorted */
-function areIdentifiersSorted(importInfo: ImportNode): boolean {
+function areIdentifiersSorted(importInfo: ImportNode) {
   switch (importInfo.type) {
     case 'side-effect':
     case 'namespace':
@@ -68,11 +69,11 @@ function areIdentifiersSorted(importInfo: ImportNode): boolean {
 }
 
 /** Generate group key for an import */
-function getGroupKey(importInfo: ImportNode) {
-  const basePriority = getImportGroupPriority(importInfo.source);
+function getImportGroupKey(importInfo: ImportNode) {
+  const classification = classifyImportGroup(importInfo.source);
   // Type-only imports should be treated as regular imports for grouping purposes
   // but preserved in their original position during sorting
-  return basePriority;
+  return getGroupKey(classification);
 }
 
 /** Check if there are sufficient blank lines between two import nodes */
@@ -80,7 +81,7 @@ function hasBlankLineBetween(
   prevNode: ImportDeclaration,
   currentNode: ImportDeclaration,
   text: string,
-): boolean {
+) {
   assertHasRange(prevNode);
   assertHasRange(currentNode);
 
@@ -90,10 +91,7 @@ function hasBlankLineBetween(
 }
 
 /** Extract indentation from the source text around an import (preserve exactly) */
-function extractIndentation(
-  sourceText: string,
-  importRange: [number, number],
-): string {
+function extractIndentation(sourceText: string, importRange: [number, number]) {
   const lineStart = sourceText.lastIndexOf('\n', importRange[0]) + 1;
   const lineEnd = sourceText.indexOf('\n', importRange[0]);
   const lineEndPos = lineEnd === -1 ? sourceText.length : lineEnd;
@@ -160,7 +158,7 @@ export const sortImports: Rule.RuleModule = {
         function computeExpected(imports: ImportNode[]) {
           const groups = new Map<number, ImportNode[]>();
           for (const importInfo of imports) {
-            const groupKey = getGroupKey(importInfo);
+            const groupKey = getImportGroupKey(importInfo);
             const existingGroup = groups.get(groupKey);
             if (typeof existingGroup === 'undefined')
               groups.set(groupKey, [importInfo]);
@@ -210,8 +208,8 @@ export const sortImports: Rule.RuleModule = {
                   typeof currentNode !== 'undefined' &&
                   typeof prevImportInfo !== 'undefined'
                 ) {
-                  const currentGroupKey = getGroupKey(importInfo);
-                  const prevGroupKey = getGroupKey(prevImportInfo);
+                  const currentGroupKey = getImportGroupKey(importInfo);
+                  const prevGroupKey = getImportGroupKey(prevImportInfo);
 
                   if (
                     currentGroupKey !== prevGroupKey &&
@@ -235,21 +233,19 @@ export const sortImports: Rule.RuleModule = {
                   break;
                 }
 
-                for (const [j, currentId] of enumerate(
-                  importInfo.identifiers,
-                )) {
-                  const expectedId = expectedImport.identifiers[j];
-                  if (
-                    typeof expectedId === 'undefined' ||
-                    currentId.imported !== expectedId.imported ||
-                    (currentId.isTypeOnly ?? false) !==
-                      (expectedId.isTypeOnly ?? false)
-                  ) {
-                    needsBlock = true;
-                    break;
-                  }
+                const allIdentifiersMatch = importInfo.identifiers.every(
+                  (currentId, j) => {
+                    const expectedId = expectedImport.identifiers[j];
+                    return (
+                      typeof expectedId !== 'undefined' &&
+                      areIdentifiersEqual(currentId, expectedId)
+                    );
+                  },
+                );
+                if (!allIdentifiersMatch) {
+                  needsBlock = true;
+                  break;
                 }
-                if (needsBlock) break;
               }
             }
           else needsBlock = true;
@@ -291,12 +287,7 @@ export const sortImports: Rule.RuleModule = {
             for (const block of blockFixData) {
               const indentationByKey = new Map<string, string>();
               for (const { info, indentation } of block.orderedItems) {
-                const key = `${info.source}:${info.type}:${info.identifiers
-                  .map(
-                    id =>
-                      `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
-                  )
-                  .join(',')}`;
+                const key = generateImportKey(info);
                 if (!indentationByKey.has(key))
                   indentationByKey.set(key, indentation);
               }
@@ -307,15 +298,9 @@ export const sortImports: Rule.RuleModule = {
               )) {
                 if (groupIndex > 0) sortedStatements.push('');
                 for (const importInfo of groupImports) {
-                  const key = `${importInfo.source}:${importInfo.type}:${importInfo.identifiers
-                    .map(
-                      id =>
-                        `${id.imported}${typeof id.local === 'undefined' ? '' : `:${id.local}`}${id.isTypeOnly === true ? ':type' : ''}`,
-                    )
-                    .join(',')}`;
+                  const key = generateImportKey(importInfo);
                   const indentation = indentationByKey.get(key) ?? '';
                   const preferences = detectFormattingPreferences(
-                    text,
                     importInfo.text,
                   );
                   const importStatement = generateImportStatement(

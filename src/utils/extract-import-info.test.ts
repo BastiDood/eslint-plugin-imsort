@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  Identifier,
   ImportDeclaration,
   ImportDefaultSpecifier,
   ImportNamespaceSpecifier,
@@ -37,34 +36,31 @@ function createMockNode(
   };
 }
 
-function createIdentifier(name: string): Identifier {
+function createIdentifier(name: string) {
   return {
-    type: 'Identifier',
+    type: 'Identifier' as const,
     name,
   };
 }
 
-function createImportSpecifier(
-  imported: string,
-  local?: string,
-): ImportSpecifier {
+function createImportSpecifier(imported: string, local?: string) {
   return {
-    type: 'ImportSpecifier',
+    type: 'ImportSpecifier' as const,
     imported: createIdentifier(imported),
     local: createIdentifier(local || imported),
   };
 }
 
-function createDefaultSpecifier(local: string): ImportDefaultSpecifier {
+function createDefaultSpecifier(local: string) {
   return {
-    type: 'ImportDefaultSpecifier',
+    type: 'ImportDefaultSpecifier' as const,
     local: createIdentifier(local),
   };
 }
 
-function createNamespaceSpecifier(local: string): ImportNamespaceSpecifier {
+function createNamespaceSpecifier(local: string) {
   return {
-    type: 'ImportNamespaceSpecifier',
+    type: 'ImportNamespaceSpecifier' as const,
     local: createIdentifier(local),
   };
 }
@@ -361,10 +357,10 @@ describe('extractImportInfo', () => {
     });
     it('should filter out non-identifier imports', () => {
       // Create a mock specifier with a non-identifier imported value
-      const mockSpecifier: ImportSpecifier = {
-        type: 'ImportSpecifier',
+      const mockSpecifier = {
+        type: 'ImportSpecifier' as const,
         imported: {
-          type: 'Literal',
+          type: 'Literal' as const,
           value: 'not-an-identifier',
           raw: '"not-an-identifier"',
         },

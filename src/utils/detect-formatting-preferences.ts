@@ -1,9 +1,4 @@
-import type { FormattingPreferences } from './types.ts';
-
-export function detectFormattingPreferences(
-  sourceText: string,
-  importText?: string,
-): FormattingPreferences {
+export function detectFormattingPreferences(importText?: string) {
   // For the specific import text, preserve its original quote style
   if (typeof importText !== 'undefined') {
     // Check for single quotes in the import source
