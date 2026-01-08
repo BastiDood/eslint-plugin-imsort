@@ -1,4 +1,4 @@
-import type { ImportIdentifier, ImportNode } from '../types.ts';
+import type { ImportIdentifier, ImportNode } from '#types.ts';
 
 function formatIdentifierKey(id: ImportIdentifier) {
   const localSuffix = typeof id.local === 'undefined' ? '' : `:${id.local}`;

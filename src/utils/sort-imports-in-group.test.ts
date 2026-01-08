@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ImportNode } from '../types.js';
+import type { ImportNode } from '#types.ts';
 
 import { sortImportsInGroup } from './sort-imports-in-group.js';
 

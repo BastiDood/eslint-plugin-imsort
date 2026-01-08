@@ -1,4 +1,4 @@
-import type { ImportGroupClassification, ImportIdentifier } from '../types.ts';
+import type { ImportGroupClassification, ImportIdentifier } from '#types.ts';
 
 function compareStrings(a: string, b: string, mode: 'base' | 'variant') {
   return a.localeCompare(b, void 0, { numeric: true, sensitivity: mode });

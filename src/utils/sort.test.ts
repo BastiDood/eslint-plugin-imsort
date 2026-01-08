@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ImportIdentifier } from '../types.ts';
+import type { ImportIdentifier } from '#types.ts';
 
 import { areIdentifiersSorted, sortIdentifiers } from './sort.ts';
 

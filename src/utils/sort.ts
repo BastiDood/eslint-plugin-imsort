@@ -1,4 +1,4 @@
-import type { ImportIdentifier } from '../types.ts';
+import type { ImportIdentifier } from '#types.ts';
 
 /**
  * Sort import identifiers with natural sorting and case-insensitive comparison.

@@ -1,4 +1,4 @@
-import type { ImportIdentifier, ImportNode } from '../types.ts';
+import type { ImportIdentifier, ImportNode } from '#types.ts';
 
 import type { FormattingPreferences } from './types.ts';
 import { sortIdentifiers } from './sort.ts';

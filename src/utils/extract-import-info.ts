@@ -1,6 +1,6 @@
 import type { ImportDeclaration } from 'estree';
 
-import type { ImportIdentifier, ImportType } from '../types.ts';
+import type { ImportIdentifier, ImportType } from '#types.ts';
 
 /** Creates an ImportIdentifier with optional local alias and type-only flag */
 function createIdentifier(

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ImportNode, ImportType } from '../types.js';
+import type { ImportNode, ImportType } from '#types.ts';
 
 import type { FormattingPreferences } from './types.js';
 import { generateImportStatement } from './generate-import-statement.js';

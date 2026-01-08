@@ -1,4 +1,4 @@
-import type { ImportNode, ImportTypeOrder } from '../types.ts';
+import type { ImportNode, ImportTypeOrder } from '#types.ts';
 
 import { compareIdentifiers, compareSources } from './compare.ts';
 

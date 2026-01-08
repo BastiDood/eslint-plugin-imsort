@@ -3,6 +3,7 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "module": "nodenext",
+    "moduleResolution": "nodenext",
     "target": "esnext",
     "lib": ["esnext"],
     "noUncheckedIndexedAccess": true,
