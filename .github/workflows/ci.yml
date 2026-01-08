@@ -24,8 +24,10 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: Check Formatters
-        run: pnpm fmt
+        run: pnpm run fmt
       - name: Run All Lints in Parallel
-        run: pnpm lint
+        run: pnpm run lint
+      - name: Run Type-Checking
+        run: pnpm run check
       - name: Run Tests
-        run: pnpm test
+        run: pnpm run test

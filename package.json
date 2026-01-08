@@ -22,10 +22,11 @@
     "sort-imports"
   ],
   "scripts": {
-    "fmt": "prettier --experimental-cli . --check",
-    "fmt:fix": "prettier --experimental-cli . --write",
-    "lint": "eslint",
-    "lint:fix": "eslint --fix",
+    "fmt": "prettier . --experimental-cli --check",
+    "fmt:fix": "prettier . --experimental-cli --write",
+    "lint": "eslint --cache --concurrency auto",
+    "lint:fix": "eslint --cache --concurrency auto --fix",
+    "check": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
     "test:watch": "vitest watch",
@@ -43,6 +44,7 @@
     "svelte": "^5.46.1",
     "svelte-eslint-parser": "^1.4.1",
     "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.52.0",
     "vitest": "^4.0.16"
   },
