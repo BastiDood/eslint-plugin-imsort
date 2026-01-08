@@ -60,6 +60,10 @@ export function classifyImportGroup(source: string) {
   // Single .. import (edge case)
   if (source === '..') return { kind: 'parent-relative' as const, depth: 1 };
 
+  // Single . import (edge case)
+  if (source === '.')
+    return { kind: 'current-directory' as const, depth: 0, isBareSlash: false };
+
   // Current directory imports (./, ./folder/, etc.)
   if (source.startsWith('./') || source === './') {
     const isBareSlash = source === './';

@@ -374,6 +374,15 @@ describe('classifyImportGroup', () => {
       expect(classifyImportGroup('./helper').kind).toBe('current-directory');
     });
 
+    it('should classify bare . import as current-directory', () => {
+      const result = classifyImportGroup('.');
+      expect(result.kind).toBe('current-directory');
+      if (result.kind === 'current-directory') {
+        expect(result.depth).toBe(0);
+        expect(result.isBareSlash).toBe(false);
+      }
+    });
+
     it('should classify descendant imports with correct depth', () => {
       // Depth 1: ./folder/file
       const depth1 = classifyImportGroup('./lib/helpers');
@@ -414,7 +423,6 @@ describe('classifyImportGroup', () => {
 
     it('should handle malformed paths', () => {
       expect(classifyImportGroup('//invalid').kind).toBe('bare-import');
-      expect(classifyImportGroup('.').kind).toBe('bare-import');
 
       const bareSlash = classifyImportGroup('./');
       expect(bareSlash.kind).toBe('current-directory');

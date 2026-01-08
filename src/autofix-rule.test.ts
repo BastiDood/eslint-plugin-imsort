@@ -465,6 +465,73 @@ import { helper } from './helper';
 import { test } from './helper/test';`,
       });
     });
+
+    it('should place bare . import before ./ imports', () => {
+      invalid({
+        code: `import { helper } from './helper';
+import '.';
+import { types } from './types';`,
+        errors: 1,
+        output: `import '.';
+import { helper } from './helper';
+import { types } from './types';`,
+      });
+    });
+
+    it('should place bare . import before nested ./ imports', () => {
+      invalid({
+        code: `import { deep } from './deep/nested';
+import '.';
+import { shallow } from './shallow';`,
+        errors: 1,
+        output: `import '.';
+import { shallow } from './shallow';
+
+import { deep } from './deep/nested';`,
+      });
+    });
+
+    it('should handle . import with other relative import depths', () => {
+      invalid({
+        code: `import { nested } from './dir/nested';
+import '.';
+import { parent } from '../parent';
+import { helper } from './helper';`,
+        errors: 1,
+        output: `import { parent } from '../parent';
+
+import '.';
+import { helper } from './helper';
+
+import { nested } from './dir/nested';`,
+      });
+    });
+
+    it('should handle . alongside ./ side-effect imports', () => {
+      invalid({
+        code: `import './styles.css';
+import '.';
+import './polyfill';`,
+        errors: 1,
+        output: `import '.';
+import './polyfill';
+import './styles.css';`,
+      });
+    });
+
+    it('should correctly order . with mixed import types from current directory', () => {
+      invalid({
+        code: `import { named } from './named';
+import defaultExport from './default';
+import '.';
+import * as namespace from './namespace';`,
+        errors: 1,
+        output: `import '.';
+import * as namespace from './namespace';
+import defaultExport from './default';
+import { named } from './named';`,
+      });
+    });
   });
 
   describe('invalid cases - multiple identifiers within imports', () => {
