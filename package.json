@@ -39,17 +39,17 @@
     "@eslint/js": "^9.39.2",
     "@types/eslint": "^9.6.1",
     "@types/estree": "^1.0.8",
-    "@typescript-eslint/parser": "^8.52.0",
+    "@typescript-eslint/parser": "^8.56.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-vitest-rule-tester": "^3.0.1",
-    "prettier": "^3.7.4",
-    "svelte": "^5.46.1",
+    "eslint-vitest-rule-tester": "^3.1.0",
+    "prettier": "^3.8.1",
+    "svelte": "^5.51.2",
     "svelte-eslint-parser": "^1.4.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.52.0",
-    "vitest": "^4.0.16"
+    "typescript-eslint": "^8.56.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "itertools": "^2.5.0"
