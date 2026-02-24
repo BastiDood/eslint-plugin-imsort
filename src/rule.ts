@@ -109,7 +109,6 @@ export const sortImports: Rule.RuleModule = {
     type: 'layout',
     docs: {
       description: 'Sort and group imports according to specified rules',
-      category: 'Stylistic Issues',
       recommended: true,
     },
     fixable: 'code',
